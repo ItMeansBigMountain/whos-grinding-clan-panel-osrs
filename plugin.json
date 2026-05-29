@@ -1,0 +1,13 @@
+{
+  "name": "WhosGrindingClanPanel",
+  "version": "1.0.0",
+  "description": "shows currently active grinders in your clan",
+  "author": "Affan Fareed",
+  "tags": [
+    "osrs",
+    "runelite",
+    "plugin",
+    "whosgrindingclanpanel"
+  ],
+  "min_engine_version": "3.0.0"
+}

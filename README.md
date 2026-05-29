@@ -1,0 +1,2 @@
+# WhosGrindingClanPanel
+WhosGrindingClanPanel OSRS plugin

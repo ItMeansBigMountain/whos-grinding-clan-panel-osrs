@@ -1,13 +1,13 @@
 {
-  "name": "WhosGrindingClanPanel",
+  "name": "Who's Grinding Clan Panel",
   "version": "1.0.0",
-  "description": "shows currently active grinders in your clan",
-  "author": "Affan Fareed",
+  "description": "Summarizes recently active clan grinders so clan chats can see who is putting in work.",
+  "author": "Oyama",
   "tags": [
-    "osrs",
-    "runelite",
-    "plugin",
-    "whosgrindingclanpanel"
+    "clan",
+    "grind",
+    "skills",
+    "activity"
   ],
   "min_engine_version": "3.0.0"
 }

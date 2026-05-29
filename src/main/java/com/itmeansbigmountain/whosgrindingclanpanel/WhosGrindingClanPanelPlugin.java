@@ -14,10 +14,20 @@ import net.runelite.client.plugins.PluginDescriptor;
 
 @Slf4j
 @PluginDescriptor(
-	name = "WhosGrindingClanPanel"
+	name = WhosGrindingClanPanelPlugin.PLUGIN_NAME,
+	description = "Summarizes recently active clan grinders so clan chats can see who is putting in work.",
+	tags = {"clan", "grind", "skills", "activity"}
 )
 public class WhosGrindingClanPanelPlugin extends Plugin
 {
+	static final String PLUGIN_NAME = "Who's Grinding Clan Panel";
+	static final int DEFAULT_ACTIVITY_WINDOW_MINUTES = 30;
+	static final int DEFAULT_MAX_PLAYERS_SHOWN = 8;
+	static final int MIN_ACTIVITY_WINDOW_MINUTES = 5;
+	static final int MAX_ACTIVITY_WINDOW_MINUTES = 240;
+	static final int MIN_PLAYERS_SHOWN = 1;
+	static final int MAX_PLAYERS_SHOWN = 25;
+
 	@Inject
 	private Client client;
 
@@ -25,24 +35,95 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 	private WhosGrindingClanPanelConfig config;
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
-		log.debug("WhosGrindingClanPanel started!");
+		log.debug("{} started", PLUGIN_NAME);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
-		log.debug("WhosGrindingClanPanel stopped!");
+		log.debug("{} stopped", PLUGIN_NAME);
 	}
 
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
-		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
+		if (gameStateChanged.getGameState() != GameState.LOGGED_IN || !config.showLoginHint())
 		{
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "WhosGrindingClanPanel says " + config.greeting(), null);
+			return;
 		}
+
+		client.addChatMessage(
+			ChatMessageType.GAMEMESSAGE,
+			"",
+			buildLoginHint(config.activityWindowMinutes(), config.maxPlayersShown()),
+			null
+		);
+	}
+
+	static String buildLoginHint(int activityWindowMinutes, int maxPlayersShown)
+	{
+		int safeWindow = clamp(
+			activityWindowMinutes,
+			MIN_ACTIVITY_WINDOW_MINUTES,
+			MAX_ACTIVITY_WINDOW_MINUTES,
+			DEFAULT_ACTIVITY_WINDOW_MINUTES
+		);
+		int safeMaxPlayers = clamp(
+			maxPlayersShown,
+			MIN_PLAYERS_SHOWN,
+			MAX_PLAYERS_SHOWN,
+			DEFAULT_MAX_PLAYERS_SHOWN
+		);
+
+		return PLUGIN_NAME + " is ready. It will highlight up to "
+			+ safeMaxPlayers
+			+ " clanmates with gains in the last "
+			+ safeWindow
+			+ " minutes once clan activity data is available.";
+	}
+
+	static String formatActivityLine(String playerName, String activityLabel, long gainedXp)
+	{
+		String safeName = normalizePlayerName(playerName);
+		String safeActivity = normalizeActivityLabel(activityLabel);
+		long safeXp = Math.max(0, gainedXp);
+
+		return safeName + " - " + safeActivity + " (" + safeXp + " xp gained)";
+	}
+
+	static String normalizePlayerName(String playerName)
+	{
+		if (playerName == null || playerName.trim().isEmpty())
+		{
+			return "Unknown clanmate";
+		}
+
+		return playerName
+			.replace('\u00A0', ' ')
+			.trim()
+			.replaceAll("\\s+", " ");
+	}
+
+	private static String normalizeActivityLabel(String activityLabel)
+	{
+		if (activityLabel == null || activityLabel.trim().isEmpty())
+		{
+			return "training";
+		}
+
+		return activityLabel.trim().replaceAll("\\s+", " ");
+	}
+
+	private static int clamp(int value, int min, int max, int fallback)
+	{
+		if (value < min || value > max)
+		{
+			return fallback;
+		}
+
+		return value;
 	}
 
 	@Provides

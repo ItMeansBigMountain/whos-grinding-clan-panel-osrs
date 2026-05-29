@@ -8,12 +8,32 @@ import net.runelite.client.config.ConfigItem;
 public interface WhosGrindingClanPanelConfig extends Config
 {
 	@ConfigItem(
-		keyName = "greeting",
-		name = "Welcome Greeting",
-		description = "The message to show to the user when they login"
+		keyName = "showLoginHint",
+		name = "Show login hint",
+		description = "Display a chat message when the plugin is ready after login"
 	)
-	default String greeting()
+	default boolean showLoginHint()
 	{
-		return "Hello";
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "activityWindowMinutes",
+		name = "Activity window (minutes)",
+		description = "How far back the clan grinding summary should look when activity data is wired in"
+	)
+	default int activityWindowMinutes()
+	{
+		return WhosGrindingClanPanelPlugin.DEFAULT_ACTIVITY_WINDOW_MINUTES;
+	}
+
+	@ConfigItem(
+		keyName = "maxPlayersShown",
+		name = "Max players shown",
+		description = "Maximum clanmates to include in the grinding summary"
+	)
+	default int maxPlayersShown()
+	{
+		return WhosGrindingClanPanelPlugin.DEFAULT_MAX_PLAYERS_SHOWN;
 	}
 }

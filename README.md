@@ -70,3 +70,16 @@ No external API calls are wired in yet. The plugin currently avoids live Wise Ol
 - Tags: `clan`, `grind`, `skills`, `activity`
 
 Before plugin-hub submission, add screenshots or a short GIF after the real clan activity panel is implemented and manually verified in RuneLite.
+
+## Product direction update
+
+The clan idea stays. The target is a RuneLite side panel for the player's real clan chat membership, not friends chat.
+
+Target UX:
+
+- Read the logged-in player's clan-chat roster/member list through RuneLite clan APIs/events where available.
+- Show every clan member in a scrollable RuneLite side panel.
+- For each member, display inline skill/boss/activity icons representing what they have gained the most recently.
+- Hovering an icon should show details: source, timeframe, gained XP/KC/count, rank delta, last seen/update timestamp, and confidence/freshness.
+- Pull clan/player gain data from Wise Old Man and TempleOSRS in the background, with local caching and partial-data states.
+- Keep friends chat separate; this panel is for clan chat membership.

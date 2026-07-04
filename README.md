@@ -20,6 +20,8 @@ The current implementation is intentionally lightweight and plugin-hub-prep frie
   - `Heatmap history days` controls the future heatmap collection window.
   - `Active hour threshold` controls when an hour is considered fully active.
   - `Clan members only` keeps future data collection focused on real clan membership.
+- Adds a RuneLite sidebar navigation button with a visible local-test panel.
+- The side panel currently renders placeholder/sample rows for recent grinders, a 24-hour UTC heatmap grid, and a data-status section.
 - Includes lightweight Java utility tests for message formatting, bounds fallback, player-name normalization, and heatmap intensity/bucketing.
 
 ## Merged repo decision
@@ -42,8 +44,9 @@ src/main/java/com/itmeansbigmountain/whosgrindingclanpanel/ClanGrindHeatmapModel
 
 ```text
 src/main/java/com/itmeansbigmountain/whosgrindingclanpanel/
-  WhosGrindingClanPanelPlugin.java   # RuneLite plugin entry point and formatting helpers
+  WhosGrindingClanPanelPlugin.java   # RuneLite plugin entry point and toolbar registration
   WhosGrindingClanPanelConfig.java   # RuneLite config options for panel + heatmap settings
+  WhosGrindingClanPanelPanel.java    # Sidebar UI scaffold for recent grinders, heatmap, and data status
   ClanGrindHeatmapModel.java         # Pure Java heatmap bucketing/intensity helpers
 src/test/java/com/itmeansbigmountain/whosgrindingclanpanel/
   WhosGrindingClanPanelPluginTest.java        # RuneLite developer-mode launcher

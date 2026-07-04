@@ -1,6 +1,9 @@
 package com.itmeansbigmountain.whosgrindingclanpanel;
 
 import com.google.inject.Provides;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
@@ -11,6 +14,8 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.NavigationButton;
 
 @Slf4j
 @PluginDescriptor(
@@ -36,16 +41,50 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 	@Inject
 	private WhosGrindingClanPanelConfig config;
 
+	@Inject
+	private ClientToolbar clientToolbar;
+
+	private WhosGrindingClanPanelPanel panel;
+	private NavigationButton navButton;
+
 	@Override
 	protected void startUp()
 	{
+		panel = new WhosGrindingClanPanelPanel(config);
+		navButton = NavigationButton.builder()
+			.tooltip(PLUGIN_NAME)
+			.icon(buildNavigationIcon())
+			.priority(5)
+			.panel(panel)
+			.build();
+		clientToolbar.addNavigation(navButton);
 		log.debug("{} started", PLUGIN_NAME);
 	}
 
 	@Override
 	protected void shutDown()
 	{
+		if (navButton != null)
+		{
+			clientToolbar.removeNavigation(navButton);
+			navButton = null;
+		}
+		panel = null;
 		log.debug("{} stopped", PLUGIN_NAME);
+	}
+
+	private BufferedImage buildNavigationIcon()
+	{
+		BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D graphics = image.createGraphics();
+		graphics.setColor(new Color(41, 41, 41));
+		graphics.fillRect(0, 0, 16, 16);
+		graphics.setColor(new Color(73, 181, 90));
+		graphics.fillRect(2, 10, 3, 4);
+		graphics.fillRect(7, 6, 3, 8);
+		graphics.fillRect(12, 3, 3, 11);
+		graphics.dispose();
+		return image;
 	}
 
 	@Subscribe

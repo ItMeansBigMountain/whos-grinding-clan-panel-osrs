@@ -15,8 +15,8 @@ import net.runelite.client.plugins.PluginDescriptor;
 @Slf4j
 @PluginDescriptor(
 	name = WhosGrindingClanPanelPlugin.PLUGIN_NAME,
-	description = "Summarizes recently active clan grinders so clan chats can see who is putting in work.",
-	tags = {"clan", "grind", "skills", "activity"}
+	description = "Shows recent clan grinders and heatmaps clan XP activity windows for event planning.",
+	tags = {"clan", "grind", "skills", "activity", "heatmap", "xp"}
 )
 public class WhosGrindingClanPanelPlugin extends Plugin
 {
@@ -27,6 +27,8 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 	static final int MAX_ACTIVITY_WINDOW_MINUTES = 240;
 	static final int MIN_PLAYERS_SHOWN = 1;
 	static final int MAX_PLAYERS_SHOWN = 25;
+	static final int DEFAULT_HEATMAP_HISTORY_DAYS = 7;
+	static final int DEFAULT_ACTIVE_HOUR_THRESHOLD = 3;
 
 	@Inject
 	private Client client;
@@ -81,7 +83,9 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 			+ safeMaxPlayers
 			+ " clanmates with gains in the last "
 			+ safeWindow
-			+ " minutes once clan activity data is available.";
+			+ " minutes and prepare a "
+			+ DEFAULT_HEATMAP_HISTORY_DAYS
+			+ " day grind heatmap once clan activity data is available.";
 	}
 
 	static String formatActivityLine(String playerName, String activityLabel, long gainedXp)

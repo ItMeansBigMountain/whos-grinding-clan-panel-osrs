@@ -1,13 +1,15 @@
 {
   "name": "Who's Grinding Clan Panel",
   "version": "1.0.0",
-  "description": "Summarizes recently active clan grinders so clan chats can see who is putting in work.",
+  "description": "Shows recent clan grinders and heatmaps clan XP activity windows for event planning.",
   "author": "Oyama",
   "tags": [
     "clan",
     "grind",
     "skills",
-    "activity"
+    "activity",
+    "heatmap",
+    "xp"
   ],
   "min_engine_version": "3.0.0"
 }

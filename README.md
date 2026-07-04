@@ -1,6 +1,13 @@
 # Who's Grinding Clan Panel
 
-A RuneLite external plugin scaffold for showing which clanmates are currently grinding. The current implementation is intentionally lightweight and plugin-hub-prep friendly: it registers clean RuneLite metadata, exposes the first configuration options, and provides reusable formatting helpers for the future clan activity panel.
+A merged RuneLite external plugin scaffold for clan activity: it combines the original **Who's Grinding Clan Panel** concept with the **Clan Grind Heatmap** model helpers.
+
+The target product is one clan-focused side panel instead of two separate plugin-hub submissions:
+
+- **Who's grinding now/recently:** summarize clanmates with recent XP/KC/activity gains.
+- **When the clan grinds:** bucket recent clan XP events by UTC hour so clan leaders can spot peak grind windows and plan events.
+
+The current implementation is intentionally lightweight and plugin-hub-prep friendly: it registers clean RuneLite metadata, exposes configuration options, includes reusable formatting helpers, and includes pure-Java heatmap bucketing logic ready for a future visible panel.
 
 ## Current behavior
 
@@ -10,17 +17,38 @@ A RuneLite external plugin scaffold for showing which clanmates are currently gr
   - `Show login hint` toggles the startup chat message.
   - `Activity window (minutes)` controls how far back a future clan activity summary should look.
   - `Max players shown` controls how many clanmates should be displayed in the summary.
-- Includes lightweight Java utility tests for message formatting, bounds fallback, and player-name normalization.
+  - `Heatmap history days` controls the future heatmap collection window.
+  - `Active hour threshold` controls when an hour is considered fully active.
+  - `Clan members only` keeps future data collection focused on real clan membership.
+- Includes lightweight Java utility tests for message formatting, bounds fallback, player-name normalization, and heatmap intensity/bucketing.
+
+## Merged repo decision
+
+`ClanGrindHeatmap` has been folded into this repo because it is best treated as a view/model inside the clan activity panel, not as a separate plugin. The old heatmap repo should be considered archival unless we later decide to submit it independently.
+
+Original source folded in:
+
+```text
+../ClanGrindHeatmap/src/main/java/com/itmeansbigmountain/clangrindheatmap/ClanGrindHeatmapModel.java
+```
+
+Merged target path:
+
+```text
+src/main/java/com/itmeansbigmountain/whosgrindingclanpanel/ClanGrindHeatmapModel.java
+```
 
 ## Project layout
 
 ```text
 src/main/java/com/itmeansbigmountain/whosgrindingclanpanel/
   WhosGrindingClanPanelPlugin.java   # RuneLite plugin entry point and formatting helpers
-  WhosGrindingClanPanelConfig.java   # RuneLite config options
+  WhosGrindingClanPanelConfig.java   # RuneLite config options for panel + heatmap settings
+  ClanGrindHeatmapModel.java         # Pure Java heatmap bucketing/intensity helpers
 src/test/java/com/itmeansbigmountain/whosgrindingclanpanel/
   WhosGrindingClanPanelPluginTest.java        # RuneLite developer-mode launcher
-  WhosGrindingClanPanelPluginUtilityTest.java # JUnit smoke tests
+  WhosGrindingClanPanelPluginUtilityTest.java # JUnit smoke tests for panel helpers
+  ClanGrindHeatmapModelTest.java              # JUnit smoke tests for heatmap helpers
 runelite-plugin.properties           # Plugin Hub metadata
 plugin.json                          # Local metadata descriptor
 build.gradle                         # Java 11 RuneLite build
@@ -56,30 +84,26 @@ To launch RuneLite in developer mode with this external plugin loaded:
 2. Confirm RuneLite opens in developer mode and lists `Who's Grinding Clan Panel`.
 3. Log into an account and verify the optional readiness chat message appears.
 4. Toggle `Show login hint` off and confirm the login hint no longer appears.
-5. Change `Activity window (minutes)` and `Max players shown`, then confirm the plugin remains stable across logout/login.
+5. Change activity and heatmap config values, then confirm the plugin remains stable across logout/login.
+6. Keep notes/screenshots for future Plugin Hub submission once the visible clan activity side panel is implemented.
 
 ## API usage notes
 
-No external API calls are wired in yet. The plugin currently avoids live Wise Old Man, TempleOSRS, or RuneLite clan-channel data dependencies so it can compile and test without a live client session. Future panel work should use background execution and caching for any network calls, then keep the RuneLite game thread limited to UI updates.
+No external API calls are wired in yet. The plugin currently avoids live Wise Old Man, TempleOSRS, or RuneLite clan-channel data dependencies so it can compile and test without a live client session.
+
+Future panel work should:
+
+- Read the logged-in player's clan-chat roster/member list through RuneLite clan APIs/events where available.
+- Pull clan/player gain data from Wise Old Man and TempleOSRS in the background, with local caching and partial-data states.
+- Keep friends chat separate; this panel is for clan chat membership.
+- Keep network calls and cache refreshes off the RuneLite game thread.
+- Show user-visible stale/partial/failure states instead of blocking or silently failing.
 
 ## Plugin Hub prep notes
 
 - Package: `com.itmeansbigmountain.whosgrindingclanpanel`
 - Main plugin class: `WhosGrindingClanPanelPlugin`
 - Display name: `Who's Grinding Clan Panel`
-- Tags: `clan`, `grind`, `skills`, `activity`
+- Tags: `clan`, `grind`, `skills`, `activity`, `heatmap`, `xp`
 
-Before plugin-hub submission, add screenshots or a short GIF after the real clan activity panel is implemented and manually verified in RuneLite.
-
-## Product direction update
-
-The clan idea stays. The target is a RuneLite side panel for the player's real clan chat membership, not friends chat.
-
-Target UX:
-
-- Read the logged-in player's clan-chat roster/member list through RuneLite clan APIs/events where available.
-- Show every clan member in a scrollable RuneLite side panel.
-- For each member, display inline skill/boss/activity icons representing what they have gained the most recently.
-- Hovering an icon should show details: source, timeframe, gained XP/KC/count, rank delta, last seen/update timestamp, and confidence/freshness.
-- Pull clan/player gain data from Wise Old Man and TempleOSRS in the background, with local caching and partial-data states.
-- Keep friends chat separate; this panel is for clan chat membership.
+Before plugin-hub submission, add screenshots or a short GIF after the real clan activity panel/heatmap UI is implemented and manually verified in RuneLite.

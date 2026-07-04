@@ -3,6 +3,7 @@ package com.itmeansbigmountain.whosgrindingclanpanel;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
+import net.runelite.client.config.Range;
 
 @ConfigGroup("whosgrindingclanpanel")
 public interface WhosGrindingClanPanelConfig extends Config
@@ -10,30 +11,70 @@ public interface WhosGrindingClanPanelConfig extends Config
 	@ConfigItem(
 		keyName = "showLoginHint",
 		name = "Show login hint",
-		description = "Display a chat message when the plugin is ready after login"
+		description = "Display a chat message when the plugin is ready after login",
+		position = 0
 	)
 	default boolean showLoginHint()
 	{
 		return true;
 	}
 
+	@Range(min = WhosGrindingClanPanelPlugin.MIN_ACTIVITY_WINDOW_MINUTES, max = WhosGrindingClanPanelPlugin.MAX_ACTIVITY_WINDOW_MINUTES)
 	@ConfigItem(
 		keyName = "activityWindowMinutes",
 		name = "Activity window (minutes)",
-		description = "How far back the clan grinding summary should look when activity data is wired in"
+		description = "How far back the clan grinding summary should look when activity data is wired in",
+		position = 1
 	)
 	default int activityWindowMinutes()
 	{
 		return WhosGrindingClanPanelPlugin.DEFAULT_ACTIVITY_WINDOW_MINUTES;
 	}
 
+	@Range(min = WhosGrindingClanPanelPlugin.MIN_PLAYERS_SHOWN, max = WhosGrindingClanPanelPlugin.MAX_PLAYERS_SHOWN)
 	@ConfigItem(
 		keyName = "maxPlayersShown",
 		name = "Max players shown",
-		description = "Maximum clanmates to include in the grinding summary"
+		description = "Maximum clanmates to include in the grinding summary",
+		position = 2
 	)
 	default int maxPlayersShown()
 	{
 		return WhosGrindingClanPanelPlugin.DEFAULT_MAX_PLAYERS_SHOWN;
+	}
+
+	@Range(min = 1, max = 30)
+	@ConfigItem(
+		keyName = "heatmapHistoryDays",
+		name = "Heatmap history days",
+		description = "Number of days future clan heatmap collection should include",
+		position = 3
+	)
+	default int heatmapHistoryDays()
+	{
+		return 7;
+	}
+
+	@Range(min = 1, max = 24)
+	@ConfigItem(
+		keyName = "activeHourThreshold",
+		name = "Active hour threshold",
+		description = "Minimum number of XP gain events in an hour before that hour is marked active",
+		position = 4
+	)
+	default int activeHourThreshold()
+	{
+		return 3;
+	}
+
+	@ConfigItem(
+		keyName = "clanOnly",
+		name = "Clan members only",
+		description = "Only include clan member activity in future external data collection",
+		position = 5
+	)
+	default boolean clanOnly()
+	{
+		return true;
 	}
 }

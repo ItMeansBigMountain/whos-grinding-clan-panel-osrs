@@ -24,7 +24,7 @@ The current implementation is intentionally lightweight and plugin-hub-prep frie
   - `Refresh interval (minutes)` controls automatic rescans while logged in and defaults to 60 minutes.
   - Hidden `ignoredMembers` persistence keeps manually removed members from being re-added immediately.
 - Adds a RuneLite sidebar navigation button with a state-driven social tracking panel.
-- The side panel starts empty by default, renders tracked members behind three top tabs (`Friends Chat`, `Clan Chat`, `Friends List`) once live scanners add them, and includes a rescan action, one-by-one remove buttons, local status messages, and a 24-hour UTC heatmap from tracked update times.
+- The side panel starts empty until RuneLite exposes social lists, renders tracked members behind three top tabs (`Friends Chat`, `Clan Chat`, `Friends List`), and includes a compact top-right rescan icon, one-by-one remove buttons, local status messages, and a 24-hour UTC heatmap from tracked update times.
 - Includes lightweight Java utility tests for message formatting, bounds fallback, player-name normalization, social tracking merge/remove/cap behavior, and heatmap intensity/bucketing.
 
 ## Merged repo decision
@@ -99,8 +99,8 @@ No external API calls are wired in yet. The plugin currently avoids live Wise Ol
 
 Future panel work should:
 
-- Read the logged-in player's friends list, clan roster/member list, and friends chat through RuneLite social APIs/events where available.
-- Replace the current empty source snapshots with live source scanners while keeping the same `SocialTrackingService` state boundary.
+- Read the logged-in player's friends list, clan roster/member list, and friends chat through RuneLite social APIs where available.
+- Keep improving source scanner event coverage for joins/leaves/status changes while preserving the same `SocialTrackingService` state boundary.
 - Pull clan/player gain data from Wise Old Man and TempleOSRS in the background, with local caching and partial-data states.
 - Keep friends list, clan, and friends chat source tags separate even when the same player appears in multiple places.
 - Keep network calls and cache refreshes off the RuneLite game thread.

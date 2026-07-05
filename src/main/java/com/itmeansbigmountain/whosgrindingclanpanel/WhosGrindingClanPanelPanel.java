@@ -80,10 +80,8 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			+ " • ignored " + state.ignoredCount()));
 		content.add(summaryLabel("Last scan: " + TIME_FORMAT.format(state.refreshedAt())));
 		content.add(Box.createVerticalStrut(5));
-		content.add(sourceTabs());
+		content.add(tabBar());
 		content.add(Box.createVerticalStrut(4));
-		content.add(toolbar());
-		content.add(Box.createVerticalStrut(5));
 
 		for (String message : state.messages())
 		{
@@ -118,21 +116,26 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		repaint();
 	}
 
-	private JPanel toolbar()
+	private JPanel tabBar()
 	{
-		JPanel toolbar = new JPanel(new BorderLayout());
-		toolbar.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		JButton refreshButton = new JButton("Rescan");
+		JPanel row = new JPanel(new BorderLayout(3, 0));
+		row.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		row.add(sourceTabs(), BorderLayout.CENTER);
+
+		JButton refreshButton = new JButton("↻");
+		refreshButton.setToolTipText("Rescan social sources");
+		refreshButton.setMargin(new Insets(0, 3, 0, 3));
+		refreshButton.setFocusable(false);
 		refreshButton.addActionListener(event -> actions.refreshRequested());
-		toolbar.add(refreshButton, BorderLayout.EAST);
-		return toolbar;
+		row.add(refreshButton, BorderLayout.EAST);
+		return row;
 	}
 
 	private JTabbedPane sourceTabs()
 	{
 		JTabbedPane tabs = new JTabbedPane();
 		tabs.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		tabs.setFont(tabs.getFont().deriveFont(9f));
+		tabs.setFont(tabs.getFont().deriveFont(10f));
 		tabs.addTab(SocialSourceFilter.FRIENDS_CHAT.label(), emptyTabPanel());
 		tabs.addTab(SocialSourceFilter.CLAN.label(), emptyTabPanel());
 		tabs.addTab(SocialSourceFilter.FRIENDS.label(), emptyTabPanel());

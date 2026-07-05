@@ -6,13 +6,21 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
+import net.runelite.api.Friend;
+import net.runelite.api.FriendContainer;
+import net.runelite.api.FriendsChatManager;
+import net.runelite.api.FriendsChatMember;
 import net.runelite.api.GameState;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.clan.ClanChannel;
+import net.runelite.api.clan.ClanChannelMember;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -175,11 +183,95 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 	private void rescanSocialSources(String reason)
 	{
 		trackingService.rescan(
-			SocialTrackingService.seedSnapshots(config.trackFriendsList(), config.trackClanMembers(), config.trackFriendsChat()),
+			buildSocialSnapshots(),
 			config.maxTrackedMembers()
 		);
 		lastAutomaticRefresh = Instant.now();
 		log.debug("{} rescanned social sources: {}", PLUGIN_NAME, reason);
+	}
+
+	private List<SocialSourceSnapshot> buildSocialSnapshots()
+	{
+		List<SocialSourceSnapshot> snapshots = new ArrayList<>();
+		if (config.trackFriendsList())
+		{
+			snapshots.add(scanFriendsList());
+		}
+		if (config.trackClanMembers())
+		{
+			snapshots.add(scanClanChat());
+		}
+		if (config.trackFriendsChat())
+		{
+			snapshots.add(scanFriendsChat());
+		}
+		if (snapshots.isEmpty())
+		{
+			snapshots.add(SocialSourceSnapshot.unsupported(TrackedMemberSource.FRIEND, "All tracking sources are disabled in config."));
+		}
+		return snapshots;
+	}
+
+	private SocialSourceSnapshot scanFriendsList()
+	{
+		FriendContainer friendContainer = client.getFriendContainer();
+		if (friendContainer == null || friendContainer.getMembers() == null)
+		{
+			return SocialSourceSnapshot.unsupported(TrackedMemberSource.FRIEND, "Friends list is not available yet.");
+		}
+
+		List<SocialMemberSnapshot> members = new ArrayList<>();
+		for (Friend friend : friendContainer.getMembers())
+		{
+			if (friend != null)
+			{
+				members.add(SocialMemberSnapshot.of(friend.getName(), friend.getWorld(), sourceSummary("Friend", friend.getWorld())));
+			}
+		}
+		return SocialSourceSnapshot.observedMembers(TrackedMemberSource.FRIEND, members);
+	}
+
+	private SocialSourceSnapshot scanClanChat()
+	{
+		ClanChannel clanChannel = client.getClanChannel();
+		if (clanChannel == null || clanChannel.getMembers() == null)
+		{
+			return SocialSourceSnapshot.unsupported(TrackedMemberSource.CLAN, "Clan chat is not available yet.");
+		}
+
+		List<SocialMemberSnapshot> members = new ArrayList<>();
+		for (ClanChannelMember clanMember : clanChannel.getMembers())
+		{
+			if (clanMember != null)
+			{
+				members.add(SocialMemberSnapshot.of(clanMember.getName(), clanMember.getWorld(), sourceSummary("Clan chat", clanMember.getWorld())));
+			}
+		}
+		return SocialSourceSnapshot.observedMembers(TrackedMemberSource.CLAN, members);
+	}
+
+	private SocialSourceSnapshot scanFriendsChat()
+	{
+		FriendsChatManager friendsChatManager = client.getFriendsChatManager();
+		if (friendsChatManager == null || friendsChatManager.getMembers() == null)
+		{
+			return SocialSourceSnapshot.unsupported(TrackedMemberSource.FRIENDS_CHAT, "Friends chat is not available yet.");
+		}
+
+		List<SocialMemberSnapshot> members = new ArrayList<>();
+		for (FriendsChatMember friendsChatMember : friendsChatManager.getMembers())
+		{
+			if (friendsChatMember != null)
+			{
+				members.add(SocialMemberSnapshot.of(friendsChatMember.getName(), friendsChatMember.getWorld(), sourceSummary("Friends chat", friendsChatMember.getWorld())));
+			}
+		}
+		return SocialSourceSnapshot.observedMembers(TrackedMemberSource.FRIENDS_CHAT, members);
+	}
+
+	private String sourceSummary(String sourceName, int world)
+	{
+		return world > 0 ? sourceName + " • world " + world : sourceName + " • offline";
 	}
 
 	private void refreshPanel()

@@ -62,9 +62,9 @@ final class SocialTrackingService
 				newMessages.add(snapshot.source().label() + ": " + snapshot.message());
 				continue;
 			}
-			for (String memberName : snapshot.memberNames())
+			for (SocialMemberSnapshot member : snapshot.members())
 			{
-				trackMember(memberName, snapshot.source(), TrackedMemberStatus.UNKNOWN, -1, "Seen in " + snapshot.source().label(), now, maxTrackedMembers);
+				trackMember(member.name(), snapshot.source(), member.status(), member.world(), member.summary(), now, maxTrackedMembers);
 			}
 		}
 		if (trackedMembers.isEmpty() && newMessages.isEmpty())

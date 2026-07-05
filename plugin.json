@@ -1,9 +1,10 @@
 {
-  "name": "Who's Grinding Clan Panel",
+  "name": "Who's Grinding Panel",
   "version": "1.0.0",
-  "description": "Shows recent clan grinders and heatmaps clan XP activity windows for event planning.",
+  "description": "Tracks friends, clan chat, and friends chat activity in a compact RuneLite side panel.",
   "author": "Oyama",
   "tags": [
+    "friends",
     "clan",
     "grind",
     "skills",

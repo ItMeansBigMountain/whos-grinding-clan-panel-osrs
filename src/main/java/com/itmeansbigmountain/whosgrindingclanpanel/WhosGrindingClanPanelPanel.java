@@ -18,6 +18,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
@@ -186,10 +187,19 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 		String sources = formatSources(member.sources());
 		String world = member.lastWorld() > 0 ? " • W" + member.lastWorld() : "";
-		JLabel label = new JLabel("<html><body style='width:" + MEMBER_TEXT_WIDTH + "px'><b>" + escapeHtml(member.displayName()) + "</b><br>"
+		JLabel label = new JLabel("<html><body style='width:" + MEMBER_TEXT_WIDTH + "px'><b>" + activityIcon(member) + " " + escapeHtml(member.displayName()) + "</b><br>"
 			+ escapeHtml(member.status().label() + world + " • " + sources) + "<br>"
 			+ escapeHtml(member.activitySummary()) + "</body></html>");
 		label.setForeground(Color.WHITE);
+		label.setToolTipText("Click for tracker details");
+		label.addMouseListener(new java.awt.event.MouseAdapter()
+		{
+			@Override
+			public void mouseClicked(java.awt.event.MouseEvent event)
+			{
+				showMemberDetails(member);
+			}
+		});
 		row.add(label, BorderLayout.CENTER);
 
 		JButton removeButton = new JButton("×");
@@ -247,6 +257,32 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	private String formatSources(Set<TrackedMemberSource> sources)
 	{
 		return sources.stream().map(TrackedMemberSource::label).collect(Collectors.joining(", "));
+	}
+
+	private String activityIcon(TrackedMember member)
+	{
+		if (member.status() == TrackedMemberStatus.ONLINE)
+		{
+			return "●";
+		}
+		if (member.hasSource(TrackedMemberSource.FRIENDS_CHAT) || member.hasSource(TrackedMemberSource.CLAN))
+		{
+			return "◇";
+		}
+		return "○";
+	}
+
+	private void showMemberDetails(TrackedMember member)
+	{
+		String details = "Name: " + member.displayName()
+			+ "\nStatus: " + member.status().label()
+			+ (member.lastWorld() > 0 ? "\nWorld: " + member.lastWorld() : "")
+			+ "\nSources: " + formatSources(member.sources())
+			+ "\nFirst seen: " + TIME_FORMAT.format(member.firstSeen())
+			+ "\nLast seen: " + TIME_FORMAT.format(member.lastSeen())
+			+ "\nLast status change: " + TIME_FORMAT.format(member.lastStatusChange())
+			+ "\nSummary: " + member.activitySummary();
+		JOptionPane.showMessageDialog(this, details, member.displayName() + " tracker", JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	private String escapeHtml(String text)

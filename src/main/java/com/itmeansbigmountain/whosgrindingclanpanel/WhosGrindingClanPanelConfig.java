@@ -100,12 +100,23 @@ public interface WhosGrindingClanPanelConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "showOfflineFriends",
+		name = "Show offline friends",
+		description = "Include offline friends from the friends list in the tracked panel",
+		position = 8
+	)
+	default boolean showOfflineFriends()
+	{
+		return false;
+	}
+
 	@Range(min = 10, max = 250)
 	@ConfigItem(
 		keyName = "maxTrackedMembers",
 		name = "Max tracked members",
 		description = "Caps the local social tracking list to control memory and API usage",
-		position = 8
+		position = 9
 	)
 	default int maxTrackedMembers()
 	{
@@ -117,7 +128,7 @@ public interface WhosGrindingClanPanelConfig extends Config
 		keyName = "refreshIntervalMinutes",
 		name = "Refresh interval (minutes)",
 		description = "How often to automatically rescan enabled social sources while logged in",
-		position = 9
+		position = 10
 	)
 	default int refreshIntervalMinutes()
 	{
@@ -128,7 +139,7 @@ public interface WhosGrindingClanPanelConfig extends Config
 		keyName = "ignoredMembers",
 		name = "Ignored members",
 		description = "Newline-separated normalized names removed from tracking",
-		position = 10,
+		position = 11,
 		hidden = true
 	)
 	default String ignoredMembers()

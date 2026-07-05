@@ -37,7 +37,7 @@ import net.runelite.client.ui.NavigationButton;
 )
 public class WhosGrindingClanPanelPlugin extends Plugin
 {
-	static final String PLUGIN_NAME = "Who's Grinding Clan Panel";
+	static final String PLUGIN_NAME = "Who's Grinding Panel";
 	static final String CONFIG_GROUP = "whosgrindingclanpanel";
 	static final int DEFAULT_ACTIVITY_WINDOW_MINUTES = 30;
 	static final int DEFAULT_MAX_PLAYERS_SHOWN = 8;
@@ -223,7 +223,7 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 		List<SocialMemberSnapshot> members = new ArrayList<>();
 		for (Friend friend : friendContainer.getMembers())
 		{
-			if (friend != null)
+			if (friend != null && (config.showOfflineFriends() || friend.getWorld() > 0))
 			{
 				members.add(SocialMemberSnapshot.of(friend.getName(), friend.getWorld(), sourceSummary("Friend", friend.getWorld())));
 			}

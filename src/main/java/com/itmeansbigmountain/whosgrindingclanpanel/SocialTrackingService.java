@@ -3,7 +3,6 @@ package com.itmeansbigmountain.whosgrindingclanpanel;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -136,15 +135,15 @@ final class SocialTrackingService
 		List<SocialSourceSnapshot> snapshots = new ArrayList<>();
 		if (trackFriends)
 		{
-			snapshots.add(SocialSourceSnapshot.members(TrackedMemberSource.FRIEND, Collections.singletonList("Oyama")));
+			snapshots.add(SocialSourceSnapshot.unsupported(TrackedMemberSource.FRIEND, "Friends list scanner is waiting for live RuneLite API wiring."));
 		}
 		if (trackClan)
 		{
-			snapshots.add(SocialSourceSnapshot.members(TrackedMemberSource.CLAN, java.util.Arrays.asList("Big Mountain", "Clan Mate")));
+			snapshots.add(SocialSourceSnapshot.unsupported(TrackedMemberSource.CLAN, "Clan chat scanner is waiting for live RuneLite API wiring."));
 		}
 		if (trackFriendsChat)
 		{
-			snapshots.add(SocialSourceSnapshot.members(TrackedMemberSource.FRIENDS_CHAT, Collections.singletonList("Skiller Alt")));
+			snapshots.add(SocialSourceSnapshot.unsupported(TrackedMemberSource.FRIENDS_CHAT, "Friends chat scanner is waiting for live RuneLite API wiring."));
 		}
 		if (snapshots.isEmpty())
 		{

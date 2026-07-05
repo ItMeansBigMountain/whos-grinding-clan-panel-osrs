@@ -59,4 +59,16 @@ public class SocialTrackingServiceTest
 
 		assertEquals(2, service.snapshot(2).members().size());
 	}
+
+	@Test
+	public void defaultSourceSnapshotsDoNotSeedFakeMembers()
+	{
+		SocialTrackingService service = new SocialTrackingService(fixedClock);
+
+		service.rescan(SocialTrackingService.seedSnapshots(true, true, true), 100);
+
+		SocialTrackerState state = service.snapshot(100);
+		assertEquals(0, state.members().size());
+		assertEquals(3, state.messages().size());
+	}
 }

@@ -39,6 +39,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss 'UTC'").withZone(ZoneOffset.UTC);
 	private static final int PANEL_TEXT_WIDTH = 154;
 	private static final int MEMBER_TEXT_WIDTH = 96;
+	private static final int CONTROL_HEIGHT = 24;
 
 	private final JPanel content = new JPanel();
 	private final WhosGrindingClanPanelConfig config;
@@ -120,11 +121,15 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	{
 		JPanel row = new JPanel(new BorderLayout(3, 0));
 		row.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		row.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, CONTROL_HEIGHT));
+		row.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH, CONTROL_HEIGHT));
 
 		JComboBox<SocialSourceFilter> sourceDropdown = new JComboBox<>(SocialSourceFilter.values());
 		sourceDropdown.setSelectedItem(filter);
-		sourceDropdown.setFont(sourceDropdown.getFont().deriveFont(11f));
+		sourceDropdown.setFont(sourceDropdown.getFont().deriveFont(10f));
 		sourceDropdown.setFocusable(false);
+		sourceDropdown.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH - 30, CONTROL_HEIGHT));
+		sourceDropdown.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH - 30, CONTROL_HEIGHT));
 		sourceDropdown.addActionListener(event -> {
 			SocialSourceFilter selectedFilter = (SocialSourceFilter) sourceDropdown.getSelectedItem();
 			if (selectedFilter != null && selectedFilter != filter)
@@ -137,8 +142,10 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 		JButton refreshButton = new JButton("↻");
 		refreshButton.setToolTipText("Rescan social sources");
-		refreshButton.setMargin(new Insets(0, 5, 0, 5));
+		refreshButton.setMargin(new Insets(0, 3, 0, 3));
 		refreshButton.setFocusable(false);
+		refreshButton.setMaximumSize(new Dimension(26, CONTROL_HEIGHT));
+		refreshButton.setPreferredSize(new Dimension(26, CONTROL_HEIGHT));
 		refreshButton.addActionListener(event -> actions.refreshRequested());
 		row.add(refreshButton, BorderLayout.EAST);
 		return row;

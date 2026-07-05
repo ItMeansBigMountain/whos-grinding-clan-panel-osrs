@@ -18,6 +18,12 @@ enum SocialSourceFilter
 		return label;
 	}
 
+	@Override
+	public String toString()
+	{
+		return label;
+	}
+
 	boolean accepts(TrackedMember member)
 	{
 		switch (this)

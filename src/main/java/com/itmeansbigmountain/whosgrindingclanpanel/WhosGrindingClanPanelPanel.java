@@ -37,8 +37,8 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	private static final Color MID_INTENSITY = new Color(211, 151, 43);
 	private static final Color LOW_INTENSITY = new Color(94, 94, 94);
 	private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss 'UTC'").withZone(ZoneOffset.UTC);
-	private static final int PANEL_TEXT_WIDTH = 172;
-	private static final int MEMBER_TEXT_WIDTH = 112;
+	private static final int PANEL_TEXT_WIDTH = 154;
+	private static final int MEMBER_TEXT_WIDTH = 96;
 
 	private final JPanel content = new JPanel();
 	private final WhosGrindingClanPanelConfig config;
@@ -55,7 +55,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 		setLayout(new BorderLayout());
 		content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-		content.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+		content.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
 		content.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
 		JScrollPane scrollPane = new JScrollPane(content);
@@ -76,14 +76,14 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	{
 		content.removeAll();
 		content.add(sectionTitle("Who's grinding"));
-		content.add(summaryLabel("Tracking " + state.members().size() + " / " + state.maxTrackedMembers()
-			+ " members • " + state.ignoredCount() + " ignored"));
+		content.add(summaryLabel("Tracked " + state.members().size() + "/" + state.maxTrackedMembers()
+			+ " • ignored " + state.ignoredCount()));
 		content.add(summaryLabel("Last scan: " + TIME_FORMAT.format(state.refreshedAt())));
-		content.add(Box.createVerticalStrut(8));
+		content.add(Box.createVerticalStrut(5));
 		content.add(sourceTabs());
-		content.add(Box.createVerticalStrut(6));
+		content.add(Box.createVerticalStrut(4));
 		content.add(toolbar());
-		content.add(Box.createVerticalStrut(8));
+		content.add(Box.createVerticalStrut(5));
 
 		for (String message : state.messages())
 		{
@@ -103,14 +103,14 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			}
 		}
 
-		content.add(Box.createVerticalStrut(14));
+		content.add(Box.createVerticalStrut(10));
 		content.add(sectionTitle("Clan grind heatmap"));
 		content.add(summaryLabel(config.heatmapHistoryDays() + " day window • "
 			+ config.activeHourThreshold() + "+ events = hot hour"));
-		content.add(Box.createVerticalStrut(8));
+		content.add(Box.createVerticalStrut(5));
 		content.add(heatmapGrid());
 
-		content.add(Box.createVerticalStrut(14));
+		content.add(Box.createVerticalStrut(10));
 		content.add(sectionTitle("Data status"));
 		content.add(summaryLabel("Local social tracking is wired. RuneLite live source scanners and Wise Old Man/TempleOSRS enrichment are next."));
 
@@ -132,7 +132,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	{
 		JTabbedPane tabs = new JTabbedPane();
 		tabs.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		tabs.setFont(tabs.getFont().deriveFont(10f));
+		tabs.setFont(tabs.getFont().deriveFont(9f));
 		tabs.addTab(SocialSourceFilter.FRIENDS_CHAT.label(), emptyTabPanel());
 		tabs.addTab(SocialSourceFilter.CLAN.label(), emptyTabPanel());
 		tabs.addTab(SocialSourceFilter.FRIENDS.label(), emptyTabPanel());
@@ -187,8 +187,8 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	{
 		JLabel label = new JLabel(text);
 		label.setForeground(Color.WHITE);
-		label.setFont(label.getFont().deriveFont(Font.BOLD, 13f));
-		label.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
+		label.setFont(label.getFont().deriveFont(Font.BOLD, 12f));
+		label.setBorder(BorderFactory.createEmptyBorder(3, 0, 3, 0));
 		return label;
 	}
 
@@ -209,11 +209,11 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 	private JPanel memberRow(TrackedMember member)
 	{
-		JPanel row = new JPanel(new BorderLayout(4, 0));
+		JPanel row = new JPanel(new BorderLayout(3, 0));
 		row.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		row.setBorder(BorderFactory.createCompoundBorder(
 			BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.DARK_GRAY_COLOR),
-			BorderFactory.createEmptyBorder(5, 5, 5, 5)
+			BorderFactory.createEmptyBorder(4, 4, 4, 4)
 		));
 
 		String sources = formatSources(member.sources());
@@ -226,7 +226,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 		JButton removeButton = new JButton("×");
 		removeButton.setToolTipText("Remove from tracking");
-		removeButton.setMargin(new Insets(1, 5, 1, 5));
+		removeButton.setMargin(new Insets(0, 4, 0, 4));
 		removeButton.addActionListener(event -> actions.removeRequested(member.displayName()));
 		row.add(removeButton, BorderLayout.EAST);
 		return row;
@@ -234,7 +234,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 	private JPanel heatmapGrid()
 	{
-		JPanel grid = new JPanel(new GridLayout(4, 6, 2, 2));
+		JPanel grid = new JPanel(new GridLayout(4, 6, 1, 1));
 		grid.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		List<Integer> counts = heatmapCountsFromTrackedMembers();
 
@@ -246,8 +246,8 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			cell.setForeground(Color.WHITE);
 			cell.setToolTipText(String.format("%02d:00 UTC • %d tracked updates • %d%% intensity", hour, counts.get(hour), intensity));
 			cell.setBackground(colorForIntensity(intensity));
-			cell.setFont(cell.getFont().deriveFont(10f));
-			cell.setPreferredSize(new Dimension(26, 22));
+			cell.setFont(cell.getFont().deriveFont(9f));
+			cell.setPreferredSize(new Dimension(23, 20));
 			grid.add(cell);
 		}
 

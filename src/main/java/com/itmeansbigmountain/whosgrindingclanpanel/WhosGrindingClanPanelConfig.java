@@ -68,13 +68,59 @@ public interface WhosGrindingClanPanelConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "clanOnly",
-		name = "Clan members only",
-		description = "Only include clan member activity in future external data collection",
+		keyName = "trackFriendsList",
+		name = "Track friends list",
+		description = "Discover and track players from your friends list",
 		position = 5
 	)
-	default boolean clanOnly()
+	default boolean trackFriendsList()
 	{
 		return true;
+	}
+
+	@ConfigItem(
+		keyName = "trackClanMembers",
+		name = "Track clan members",
+		description = "Discover and track players from your clan context",
+		position = 6
+	)
+	default boolean trackClanMembers()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "trackFriendsChat",
+		name = "Track friends chat",
+		description = "Discover and track players from your active friends chat",
+		position = 7
+	)
+	default boolean trackFriendsChat()
+	{
+		return true;
+	}
+
+	@Range(min = 10, max = 250)
+	@ConfigItem(
+		keyName = "maxTrackedMembers",
+		name = "Max tracked members",
+		description = "Caps the local social tracking list to control memory and API usage",
+		position = 8
+	)
+	default int maxTrackedMembers()
+	{
+		return 100;
+	}
+
+	@ConfigItem(
+		keyName = "ignoredMembers",
+		name = "Ignored members",
+		description = "Newline-separated normalized names removed from tracking",
+		position = 9,
+		hidden = true
+	)
+	default String ignoredMembers()
+	{
+		return "";
 	}
 }

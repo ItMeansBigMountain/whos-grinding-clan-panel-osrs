@@ -12,8 +12,8 @@ public class WhosGrindingClanPanelPluginUtilityTest
 	{
 		String hint = WhosGrindingClanPanelPlugin.buildLoginHint(45, 12);
 
-		assertTrue(hint.contains("up to 12 clanmates"));
-		assertTrue(hint.contains("last 45 minutes"));
+		assertTrue(hint.contains("up to 12 visible rows"));
+		assertTrue(hint.contains("45 minute activity window"));
 	}
 
 	@Test
@@ -21,8 +21,8 @@ public class WhosGrindingClanPanelPluginUtilityTest
 	{
 		String hint = WhosGrindingClanPanelPlugin.buildLoginHint(1, 99);
 
-		assertTrue(hint.contains("up to " + WhosGrindingClanPanelPlugin.DEFAULT_MAX_PLAYERS_SHOWN + " clanmates"));
-		assertTrue(hint.contains("last " + WhosGrindingClanPanelPlugin.DEFAULT_ACTIVITY_WINDOW_MINUTES + " minutes"));
+		assertTrue(hint.contains("up to " + WhosGrindingClanPanelPlugin.DEFAULT_MAX_PLAYERS_SHOWN + " visible rows"));
+		assertTrue(hint.contains(WhosGrindingClanPanelPlugin.DEFAULT_ACTIVITY_WINDOW_MINUTES + " minute activity window"));
 	}
 
 	@Test

@@ -13,16 +13,18 @@ The current implementation is intentionally lightweight and plugin-hub-prep frie
 
 - Registers as `Who's Grinding Clan Panel` in RuneLite.
 - Shows an optional login chat hint when the plugin is ready.
-- Provides configuration for the intended clan activity summary:
+- Provides configuration for the social activity tracker:
   - `Show login hint` toggles the startup chat message.
-  - `Activity window (minutes)` controls how far back a future clan activity summary should look.
-  - `Max players shown` controls how many clanmates should be displayed in the summary.
-  - `Heatmap history days` controls the future heatmap collection window.
+  - `Activity window (minutes)` controls how far back the activity summary should look.
+  - `Max players shown` controls how many members should be displayed in short summaries.
+  - `Heatmap history days` controls the heatmap collection window.
   - `Active hour threshold` controls when an hour is considered fully active.
-  - `Clan members only` keeps future data collection focused on real clan membership.
-- Adds a RuneLite sidebar navigation button with a visible local-test panel.
-- The side panel currently renders placeholder/sample rows for recent grinders, a 24-hour UTC heatmap grid, and a data-status section.
-- Includes lightweight Java utility tests for message formatting, bounds fallback, player-name normalization, and heatmap intensity/bucketing.
+  - `Track friends list`, `Track clan members`, and `Track friends chat` enable the three social source views.
+  - `Max tracked members` caps the local tracking list for memory/API control.
+  - Hidden `ignoredMembers` persistence keeps manually removed members from being re-added immediately.
+- Adds a RuneLite sidebar navigation button with a state-driven social tracking panel.
+- The side panel renders tracked members behind three top tabs (`Friends Chat`, `Clan Chat`, `Friends List`), plus a rescan action, one-by-one remove buttons, local status messages, and a 24-hour UTC heatmap from tracked update times.
+- Includes lightweight Java utility tests for message formatting, bounds fallback, player-name normalization, social tracking merge/remove/cap behavior, and heatmap intensity/bucketing.
 
 ## Merged repo decision
 
@@ -96,9 +98,10 @@ No external API calls are wired in yet. The plugin currently avoids live Wise Ol
 
 Future panel work should:
 
-- Read the logged-in player's clan-chat roster/member list through RuneLite clan APIs/events where available.
+- Read the logged-in player's friends list, clan roster/member list, and friends chat through RuneLite social APIs/events where available.
+- Replace the current seeded local snapshots with live source scanners while keeping the same `SocialTrackingService` state boundary.
 - Pull clan/player gain data from Wise Old Man and TempleOSRS in the background, with local caching and partial-data states.
-- Keep friends chat separate; this panel is for clan chat membership.
+- Keep friends list, clan, and friends chat source tags separate even when the same player appears in multiple places.
 - Keep network calls and cache refreshes off the RuneLite game thread.
 - Show user-visible stale/partial/failure states instead of blocking or silently failing.
 

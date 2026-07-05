@@ -12,6 +12,7 @@ import net.runelite.api.GameState;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
@@ -20,12 +21,13 @@ import net.runelite.client.ui.NavigationButton;
 @Slf4j
 @PluginDescriptor(
 	name = WhosGrindingClanPanelPlugin.PLUGIN_NAME,
-	description = "Shows recent clan grinders and heatmaps clan XP activity windows for event planning.",
-	tags = {"clan", "grind", "skills", "activity", "heatmap", "xp"}
+	description = "Tracks friends, clan, and friends chat members for live social activity updates.",
+	tags = {"clan", "friends", "grind", "activity", "heatmap", "xp"}
 )
 public class WhosGrindingClanPanelPlugin extends Plugin
 {
 	static final String PLUGIN_NAME = "Who's Grinding Clan Panel";
+	static final String CONFIG_GROUP = "whosgrindingclanpanel";
 	static final int DEFAULT_ACTIVITY_WINDOW_MINUTES = 30;
 	static final int DEFAULT_MAX_PLAYERS_SHOWN = 8;
 	static final int MIN_ACTIVITY_WINDOW_MINUTES = 5;
@@ -44,13 +46,39 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 	@Inject
 	private ClientToolbar clientToolbar;
 
+	@Inject
+	private ConfigManager configManager;
+
 	private WhosGrindingClanPanelPanel panel;
 	private NavigationButton navButton;
+	private SocialTrackingService trackingService;
 
 	@Override
 	protected void startUp()
 	{
-		panel = new WhosGrindingClanPanelPanel(config);
+		trackingService = new SocialTrackingService();
+		trackingService.loadIgnoredMembers(config.ignoredMembers());
+		rescanSocialSources();
+
+		panel = new WhosGrindingClanPanelPanel(config, trackingService.snapshot(config.maxTrackedMembers()), new WhosGrindingClanPanelPanel.PanelActions()
+		{
+			@Override
+			public void refreshRequested()
+			{
+				rescanSocialSources();
+				refreshPanel();
+			}
+
+			@Override
+			public void removeRequested(String memberName)
+			{
+				if (trackingService.removeMember(memberName))
+				{
+					configManager.setConfiguration(CONFIG_GROUP, "ignoredMembers", trackingService.serializeIgnoredMembers());
+					refreshPanel();
+				}
+			}
+		});
 		navButton = NavigationButton.builder()
 			.tooltip(PLUGIN_NAME)
 			.icon(buildNavigationIcon())
@@ -70,6 +98,7 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 			navButton = null;
 		}
 		panel = null;
+		trackingService = null;
 		log.debug("{} stopped", PLUGIN_NAME);
 	}
 
@@ -90,6 +119,12 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
+		if (gameStateChanged.getGameState() == GameState.LOGGED_IN && trackingService != null)
+		{
+			rescanSocialSources();
+			refreshPanel();
+		}
+
 		if (gameStateChanged.getGameState() != GameState.LOGGED_IN || !config.showLoginHint())
 		{
 			return;
@@ -101,6 +136,34 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 			buildLoginHint(config.activityWindowMinutes(), config.maxPlayersShown()),
 			null
 		);
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged configChanged)
+	{
+		if (!CONFIG_GROUP.equals(configChanged.getGroup()) || trackingService == null)
+		{
+			return;
+		}
+		trackingService.loadIgnoredMembers(config.ignoredMembers());
+		rescanSocialSources();
+		refreshPanel();
+	}
+
+	private void rescanSocialSources()
+	{
+		trackingService.rescan(
+			SocialTrackingService.seedSnapshots(config.trackFriendsList(), config.trackClanMembers(), config.trackFriendsChat()),
+			config.maxTrackedMembers()
+		);
+	}
+
+	private void refreshPanel()
+	{
+		if (panel != null)
+		{
+			panel.setState(trackingService.snapshot(config.maxTrackedMembers()));
+		}
 	}
 
 	static String buildLoginHint(int activityWindowMinutes, int maxPlayersShown)
@@ -118,13 +181,11 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 			DEFAULT_MAX_PLAYERS_SHOWN
 		);
 
-		return PLUGIN_NAME + " is ready. It will highlight up to "
+		return PLUGIN_NAME + " is ready. It is tracking up to "
 			+ safeMaxPlayers
-			+ " clanmates with gains in the last "
+			+ " visible rows from your configured social sources over a "
 			+ safeWindow
-			+ " minutes and prepare a "
-			+ DEFAULT_HEATMAP_HISTORY_DAYS
-			+ " day grind heatmap once clan activity data is available.";
+			+ " minute activity window.";
 	}
 
 	static String formatActivityLine(String playerName, String activityLabel, long gainedXp)

@@ -112,11 +112,23 @@ public interface WhosGrindingClanPanelConfig extends Config
 		return 100;
 	}
 
+	@Range(min = 1, max = 1440)
+	@ConfigItem(
+		keyName = "refreshIntervalMinutes",
+		name = "Refresh interval (minutes)",
+		description = "How often to automatically rescan enabled social sources while logged in",
+		position = 9
+	)
+	default int refreshIntervalMinutes()
+	{
+		return 60;
+	}
+
 	@ConfigItem(
 		keyName = "ignoredMembers",
 		name = "Ignored members",
 		description = "Newline-separated normalized names removed from tracking",
-		position = 9,
+		position = 10,
 		hidden = true
 	)
 	default String ignoredMembers()

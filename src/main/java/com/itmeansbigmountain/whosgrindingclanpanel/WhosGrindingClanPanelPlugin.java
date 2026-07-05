@@ -4,12 +4,15 @@ import com.google.inject.Provides;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.time.Duration;
+import java.time.Instant;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -52,20 +55,21 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 	private WhosGrindingClanPanelPanel panel;
 	private NavigationButton navButton;
 	private SocialTrackingService trackingService;
+	private Instant lastAutomaticRefresh;
 
 	@Override
 	protected void startUp()
 	{
 		trackingService = new SocialTrackingService();
 		trackingService.loadIgnoredMembers(config.ignoredMembers());
-		rescanSocialSources();
+		rescanSocialSources("startup");
 
 		panel = new WhosGrindingClanPanelPanel(config, trackingService.snapshot(config.maxTrackedMembers()), new WhosGrindingClanPanelPanel.PanelActions()
 		{
 			@Override
 			public void refreshRequested()
 			{
-				rescanSocialSources();
+				rescanSocialSources("manual refresh");
 				refreshPanel();
 			}
 
@@ -99,6 +103,7 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 		}
 		panel = null;
 		trackingService = null;
+		lastAutomaticRefresh = null;
 		log.debug("{} stopped", PLUGIN_NAME);
 	}
 
@@ -121,7 +126,7 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 	{
 		if (gameStateChanged.getGameState() == GameState.LOGGED_IN && trackingService != null)
 		{
-			rescanSocialSources();
+			rescanSocialSources("login");
 			refreshPanel();
 		}
 
@@ -139,6 +144,23 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 	}
 
 	@Subscribe
+	public void onGameTick(GameTick gameTick)
+	{
+		if (client.getGameState() != GameState.LOGGED_IN || trackingService == null)
+		{
+			return;
+		}
+
+		Instant now = Instant.now();
+		int refreshMinutes = Math.max(1, config.refreshIntervalMinutes());
+		if (lastAutomaticRefresh == null || Duration.between(lastAutomaticRefresh, now).toMinutes() >= refreshMinutes)
+		{
+			rescanSocialSources("scheduled " + refreshMinutes + " minute refresh");
+			refreshPanel();
+		}
+	}
+
+	@Subscribe
 	public void onConfigChanged(ConfigChanged configChanged)
 	{
 		if (!CONFIG_GROUP.equals(configChanged.getGroup()) || trackingService == null)
@@ -146,16 +168,18 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 			return;
 		}
 		trackingService.loadIgnoredMembers(config.ignoredMembers());
-		rescanSocialSources();
+		rescanSocialSources("config change");
 		refreshPanel();
 	}
 
-	private void rescanSocialSources()
+	private void rescanSocialSources(String reason)
 	{
 		trackingService.rescan(
 			SocialTrackingService.seedSnapshots(config.trackFriendsList(), config.trackClanMembers(), config.trackFriendsChat()),
 			config.maxTrackedMembers()
 		);
+		lastAutomaticRefresh = Instant.now();
+		log.debug("{} rescanned social sources: {}", PLUGIN_NAME, reason);
 	}
 
 	private void refreshPanel()

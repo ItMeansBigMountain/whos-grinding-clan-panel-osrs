@@ -21,6 +21,7 @@ The current implementation is intentionally lightweight and plugin-hub-prep frie
   - `Active hour threshold` controls when an hour is considered fully active.
   - `Track friends list`, `Track clan members`, and `Track friends chat` enable the three social source views.
   - `Max tracked members` caps the local tracking list for memory/API control.
+  - `Refresh interval (minutes)` controls automatic rescans while logged in and defaults to 60 minutes.
   - Hidden `ignoredMembers` persistence keeps manually removed members from being re-added immediately.
 - Adds a RuneLite sidebar navigation button with a state-driven social tracking panel.
 - The side panel starts empty by default, renders tracked members behind three top tabs (`Friends Chat`, `Clan Chat`, `Friends List`) once live scanners add them, and includes a rescan action, one-by-one remove buttons, local status messages, and a 24-hour UTC heatmap from tracked update times.

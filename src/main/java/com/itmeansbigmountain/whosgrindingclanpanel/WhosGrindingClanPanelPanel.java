@@ -16,11 +16,11 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
-import javax.swing.JTabbedPane;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 
@@ -80,7 +80,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			+ " • ignored " + state.ignoredCount()));
 		content.add(summaryLabel("Last scan: " + TIME_FORMAT.format(state.refreshedAt())));
 		content.add(Box.createVerticalStrut(5));
-		content.add(tabBar());
+		content.add(sourceSelector());
 		content.add(Box.createVerticalStrut(4));
 
 		for (String message : state.messages())
@@ -116,74 +116,32 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		repaint();
 	}
 
-	private JPanel tabBar()
+	private JPanel sourceSelector()
 	{
 		JPanel row = new JPanel(new BorderLayout(3, 0));
 		row.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		row.add(sourceTabs(), BorderLayout.CENTER);
 
-		JButton refreshButton = new JButton("↻");
-		refreshButton.setToolTipText("Rescan social sources");
-		refreshButton.setMargin(new Insets(0, 3, 0, 3));
-		refreshButton.setFocusable(false);
-		refreshButton.addActionListener(event -> actions.refreshRequested());
-		row.add(refreshButton, BorderLayout.EAST);
-		return row;
-	}
-
-	private JTabbedPane sourceTabs()
-	{
-		JTabbedPane tabs = new JTabbedPane();
-		tabs.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		tabs.setFont(tabs.getFont().deriveFont(10f));
-		tabs.addTab(SocialSourceFilter.FRIENDS_CHAT.label(), emptyTabPanel());
-		tabs.addTab(SocialSourceFilter.CLAN.label(), emptyTabPanel());
-		tabs.addTab(SocialSourceFilter.FRIENDS.label(), emptyTabPanel());
-		tabs.setSelectedIndex(tabIndexForFilter(filter));
-		tabs.addChangeListener(event -> {
-			SocialSourceFilter selectedFilter = filterForTabIndex(tabs.getSelectedIndex());
-			if (selectedFilter != filter)
+		JComboBox<SocialSourceFilter> sourceDropdown = new JComboBox<>(SocialSourceFilter.values());
+		sourceDropdown.setSelectedItem(filter);
+		sourceDropdown.setFont(sourceDropdown.getFont().deriveFont(11f));
+		sourceDropdown.setFocusable(false);
+		sourceDropdown.addActionListener(event -> {
+			SocialSourceFilter selectedFilter = (SocialSourceFilter) sourceDropdown.getSelectedItem();
+			if (selectedFilter != null && selectedFilter != filter)
 			{
 				filter = selectedFilter;
 				rebuild();
 			}
 		});
-		return tabs;
-	}
+		row.add(sourceDropdown, BorderLayout.CENTER);
 
-	private JPanel emptyTabPanel()
-	{
-		JPanel panel = new JPanel();
-		panel.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		return panel;
-	}
-
-	private int tabIndexForFilter(SocialSourceFilter filter)
-	{
-		switch (filter)
-		{
-			case CLAN:
-				return 1;
-			case FRIENDS:
-				return 2;
-			case FRIENDS_CHAT:
-			default:
-				return 0;
-		}
-	}
-
-	private SocialSourceFilter filterForTabIndex(int tabIndex)
-	{
-		switch (tabIndex)
-		{
-			case 1:
-				return SocialSourceFilter.CLAN;
-			case 2:
-				return SocialSourceFilter.FRIENDS;
-			case 0:
-			default:
-				return SocialSourceFilter.FRIENDS_CHAT;
-		}
+		JButton refreshButton = new JButton("↻");
+		refreshButton.setToolTipText("Rescan social sources");
+		refreshButton.setMargin(new Insets(0, 5, 0, 5));
+		refreshButton.setFocusable(false);
+		refreshButton.addActionListener(event -> actions.refreshRequested());
+		row.add(refreshButton, BorderLayout.EAST);
+		return row;
 	}
 
 	private JLabel sectionTitle(String text)

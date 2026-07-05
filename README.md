@@ -24,7 +24,7 @@ The current implementation is intentionally lightweight and plugin-hub-prep frie
   - `Refresh interval (minutes)` controls automatic rescans while logged in and defaults to 60 minutes.
   - Hidden `ignoredMembers` persistence keeps manually removed members from being re-added immediately.
 - Adds a RuneLite sidebar navigation button with a state-driven social tracking panel.
-- The side panel starts empty until RuneLite exposes social lists, renders tracked members behind three top tabs (`Friends Chat`, `Clan Chat`, `Friends List`), and includes a compact top-right rescan icon, one-by-one remove buttons, local status messages, and a 24-hour UTC heatmap from tracked update times.
+- The side panel starts empty until RuneLite exposes social lists, renders tracked members behind a compact source dropdown (`Friends Chat`, `Clan Chat`, `Friends List`), and includes a visible top-right rescan icon, one-by-one remove buttons, local status messages, and a 24-hour UTC heatmap from tracked update times.
 - Includes lightweight Java utility tests for message formatting, bounds fallback, player-name normalization, social tracking merge/remove/cap behavior, and heatmap intensity/bucketing.
 
 ## Merged repo decision

@@ -19,8 +19,6 @@ import net.runelite.api.FriendsChatMember;
 import net.runelite.api.GameState;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
-import net.runelite.api.clan.ClanChannel;
-import net.runelite.api.clan.ClanChannelMember;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -32,8 +30,8 @@ import net.runelite.client.ui.NavigationButton;
 @Slf4j
 @PluginDescriptor(
 	name = WhosGrindingClanPanelPlugin.PLUGIN_NAME,
-	description = "Tracks friends, clan, and friends chat members for live social activity updates.",
-	tags = {"clan", "friends", "grind", "activity", "heatmap", "xp"}
+	description = "Tracks friends and friends chat members for live social activity updates.",
+	tags = {"friends", "grind", "activity", "skills", "xp"}
 )
 public class WhosGrindingClanPanelPlugin extends Plugin
 {
@@ -197,10 +195,6 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 		{
 			snapshots.add(scanFriendsList());
 		}
-		if (config.trackClanMembers())
-		{
-			snapshots.add(scanClanChat());
-		}
 		if (config.trackFriendsChat())
 		{
 			snapshots.add(scanFriendsChat());
@@ -229,25 +223,6 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 			}
 		}
 		return SocialSourceSnapshot.observedMembers(TrackedMemberSource.FRIEND, members);
-	}
-
-	private SocialSourceSnapshot scanClanChat()
-	{
-		ClanChannel clanChannel = client.getClanChannel();
-		if (clanChannel == null || clanChannel.getMembers() == null)
-		{
-			return SocialSourceSnapshot.unsupported(TrackedMemberSource.CLAN, "Clan chat is not available yet.");
-		}
-
-		List<SocialMemberSnapshot> members = new ArrayList<>();
-		for (ClanChannelMember clanMember : clanChannel.getMembers())
-		{
-			if (clanMember != null)
-			{
-				members.add(SocialMemberSnapshot.of(clanMember.getName(), clanMember.getWorld(), sourceSummary("Clan chat", clanMember.getWorld())));
-			}
-		}
-		return SocialSourceSnapshot.observedMembers(TrackedMemberSource.CLAN, members);
 	}
 
 	private SocialSourceSnapshot scanFriendsChat()
@@ -299,7 +274,7 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 
 		return PLUGIN_NAME + " is ready. It is tracking up to "
 			+ safeMaxPlayers
-			+ " visible rows from your configured social sources over a "
+			+ " visible rows from your friends and friends chat sources over a "
 			+ safeWindow
 			+ " minute activity window.";
 	}
@@ -317,7 +292,7 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 	{
 		if (playerName == null || playerName.trim().isEmpty())
 		{
-			return "Unknown clanmate";
+			return "Unknown player";
 		}
 
 		return playerName

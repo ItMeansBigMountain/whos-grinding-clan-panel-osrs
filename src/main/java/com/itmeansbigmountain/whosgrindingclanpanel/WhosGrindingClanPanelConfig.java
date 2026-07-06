@@ -23,7 +23,7 @@ public interface WhosGrindingClanPanelConfig extends Config
 	@ConfigItem(
 		keyName = "activityWindowMinutes",
 		name = "Activity window (minutes)",
-		description = "How far back the clan grinding summary should look when activity data is wired in",
+		description = "How far back the friends activity summary should look when activity data is wired in",
 		position = 1
 	)
 	default int activityWindowMinutes()
@@ -35,7 +35,7 @@ public interface WhosGrindingClanPanelConfig extends Config
 	@ConfigItem(
 		keyName = "maxPlayersShown",
 		name = "Max players shown",
-		description = "Maximum clanmates to include in the grinding summary",
+		description = "Maximum players to include in the grinding summary",
 		position = 2
 	)
 	default int maxPlayersShown()
@@ -47,7 +47,7 @@ public interface WhosGrindingClanPanelConfig extends Config
 	@ConfigItem(
 		keyName = "heatmapHistoryDays",
 		name = "Heatmap history days",
-		description = "Number of days future clan heatmap collection should include",
+		description = "Number of days future activity heatmap collection should include",
 		position = 3
 	)
 	default int heatmapHistoryDays()
@@ -79,21 +79,10 @@ public interface WhosGrindingClanPanelConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "trackClanMembers",
-		name = "Track clan members",
-		description = "Discover and track players from your clan context",
-		position = 6
-	)
-	default boolean trackClanMembers()
-	{
-		return true;
-	}
-
-	@ConfigItem(
 		keyName = "trackFriendsChat",
 		name = "Track friends chat",
 		description = "Discover and track players from your active friends chat",
-		position = 7
+		position = 6
 	)
 	default boolean trackFriendsChat()
 	{
@@ -104,7 +93,7 @@ public interface WhosGrindingClanPanelConfig extends Config
 		keyName = "showOfflineFriends",
 		name = "Show offline friends",
 		description = "Include offline friends from the friends list in the tracked panel",
-		position = 8
+		position = 7
 	)
 	default boolean showOfflineFriends()
 	{
@@ -116,7 +105,7 @@ public interface WhosGrindingClanPanelConfig extends Config
 		keyName = "maxTrackedMembers",
 		name = "Max tracked members",
 		description = "Caps the local social tracking list to control memory and API usage",
-		position = 9
+		position = 8
 	)
 	default int maxTrackedMembers()
 	{
@@ -128,7 +117,7 @@ public interface WhosGrindingClanPanelConfig extends Config
 		keyName = "refreshIntervalMinutes",
 		name = "Refresh interval (minutes)",
 		description = "How often to automatically rescan enabled social sources while logged in",
-		position = 10
+		position = 9
 	)
 	default int refreshIntervalMinutes()
 	{
@@ -139,7 +128,7 @@ public interface WhosGrindingClanPanelConfig extends Config
 		keyName = "ignoredMembers",
 		name = "Ignored members",
 		description = "Newline-separated normalized names removed from tracking",
-		position = 11,
+		position = 10,
 		hidden = true
 	)
 	default String ignoredMembers()

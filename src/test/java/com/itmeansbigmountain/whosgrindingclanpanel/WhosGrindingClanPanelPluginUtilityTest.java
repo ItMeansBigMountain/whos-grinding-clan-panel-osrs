@@ -38,6 +38,6 @@ public class WhosGrindingClanPanelPluginUtilityTest
 	{
 		String line = WhosGrindingClanPanelPlugin.formatActivityLine(" ", "", -50);
 
-		assertEquals("Unknown clanmate - training (0 xp gained)", line);
+		assertEquals("Unknown player - training (0 xp gained)", line);
 	}
 }

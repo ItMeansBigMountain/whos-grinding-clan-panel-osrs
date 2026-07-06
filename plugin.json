@@ -1,15 +1,13 @@
 {
   "name": "Who's Grinding Panel",
   "version": "1.0.0",
-  "description": "Tracks friends, clan chat, and friends chat activity in a compact RuneLite side panel.",
+  "description": "Tracks friends and friends chat activity in a compact RuneLite side panel.",
   "author": "Oyama",
   "tags": [
     "friends",
-    "clan",
     "grind",
     "skills",
     "activity",
-    "heatmap",
     "xp"
   ],
   "min_engine_version": "3.0.0"

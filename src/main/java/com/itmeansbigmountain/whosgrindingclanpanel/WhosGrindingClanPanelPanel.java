@@ -93,7 +93,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		List<TrackedMember> visibleMembers = state.filteredMembers(filter);
 		if (visibleMembers.isEmpty())
 		{
-			content.add(statusLabel("No tracked members for " + filter.label() + ". Press Rescan after logging in or enable more sources."));
+			content.add(statusLabel("No tracked members for " + filter.label() + ". Press ↻ after logging in or enable the source in config."));
 		}
 		else
 		{
@@ -104,7 +104,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		}
 
 		content.add(Box.createVerticalStrut(10));
-		content.add(sectionTitle("Clan grind heatmap"));
+		content.add(sectionTitle("Activity heatmap"));
 		content.add(summaryLabel(config.heatmapHistoryDays() + " day window • "
 			+ config.activeHourThreshold() + "+ events = hot hour"));
 		content.add(Box.createVerticalStrut(5));
@@ -112,7 +112,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 		content.add(Box.createVerticalStrut(10));
 		content.add(sectionTitle("Data status"));
-		content.add(summaryLabel("Local social tracking is wired. RuneLite live source scanners and Wise Old Man/TempleOSRS enrichment are next."));
+		content.add(summaryLabel("Friends tracking is wired. Hiscore/Wise Old Man/TempleOSRS enrichment is next."));
 
 		revalidate();
 		repaint();
@@ -265,7 +265,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		{
 			return "●";
 		}
-		if (member.hasSource(TrackedMemberSource.FRIENDS_CHAT) || member.hasSource(TrackedMemberSource.CLAN))
+		if (member.hasSource(TrackedMemberSource.FRIENDS_CHAT))
 		{
 			return "◇";
 		}

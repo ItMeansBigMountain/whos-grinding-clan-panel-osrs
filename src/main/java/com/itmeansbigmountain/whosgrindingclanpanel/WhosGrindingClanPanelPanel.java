@@ -107,6 +107,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		content.add(sectionTitle("Activity heatmap"));
 		content.add(summaryLabel(config.heatmapHistoryDays() + " day window • "
 			+ config.activeHourThreshold() + "+ events = hot hour"));
+		content.add(summaryLabel("Gains/detail period: " + config.gainsPeriod().label()));
 		content.add(Box.createVerticalStrut(5));
 		content.add(heatmapGrid());
 
@@ -279,6 +280,8 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			+ "\nStatus: " + member.status().label()
 			+ (member.lastWorld() > 0 ? "\nWorld: " + member.lastWorld() : "")
 			+ "\nSources: " + formatSources(member.sources())
+			+ "\nGains period: " + config.gainsPeriod().label()
+			+ "\nWise Old Man gained: " + PlayerTrackingLinks.wiseOldManGainedUrl(member.displayName(), config.gainsPeriod())
 			+ "\nFirst seen: " + TIME_FORMAT.format(member.firstSeen())
 			+ "\nLast seen: " + TIME_FORMAT.format(member.lastSeen())
 			+ "\nLast status change: " + TIME_FORMAT.format(member.lastStatusChange())

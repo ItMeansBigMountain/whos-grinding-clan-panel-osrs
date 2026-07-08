@@ -136,10 +136,21 @@ public interface WhosGrindingClanPanelConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "gainsPeriod",
+		name = "Gains period",
+		description = "Time window used for currently grinding summaries and player detail links",
+		position = 11
+	)
+	default GainsPeriod gainsPeriod()
+	{
+		return GainsPeriod.SEVEN_DAYS;
+	}
+
+	@ConfigItem(
 		keyName = "ignoredMembers",
 		name = "Ignored members",
 		description = "Newline-separated normalized names removed from tracking",
-		position = 11,
+		position = 12,
 		hidden = true
 	)
 	default String ignoredMembers()

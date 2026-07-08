@@ -1,6 +1,6 @@
 package com.itmeansbigmountain.whosgrindingclanpanel;
 
-enum GainsPeriod
+public enum GainsPeriod
 {
 	DAY("Day", 1, "day"),
 	SEVEN_DAYS("7 days", 7, "week"),

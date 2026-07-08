@@ -38,9 +38,9 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	private static final Color MID_INTENSITY = new Color(211, 151, 43);
 	private static final Color LOW_INTENSITY = new Color(94, 94, 94);
 	private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss 'UTC'").withZone(ZoneOffset.UTC);
-	private static final int PANEL_TEXT_WIDTH = 154;
-	private static final int MEMBER_TEXT_WIDTH = 96;
-	private static final int CONTROL_HEIGHT = 24;
+	private static final int PANEL_TEXT_WIDTH = WhosGrindingPanelDimensions.CONTENT_WIDTH;
+	private static final int MEMBER_TEXT_WIDTH = WhosGrindingPanelDimensions.MEMBER_TEXT_WIDTH;
+	private static final int CONTROL_HEIGHT = WhosGrindingPanelDimensions.CONTROL_HEIGHT;
 
 	private final JPanel content = new JPanel();
 	private final WhosGrindingClanPanelConfig config;

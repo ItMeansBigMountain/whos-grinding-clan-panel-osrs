@@ -114,12 +114,23 @@ public interface WhosGrindingClanPanelConfig extends Config
 	@ConfigItem(
 		keyName = "gainsPeriod",
 		name = "Gains period",
-		description = "Time window used for currently grinding summaries and player detail links",
+		description = "Time window used for Wise Old Man gained summaries and player detail links",
 		position = 11
 	)
 	default GainsPeriod gainsPeriod()
 	{
 		return GainsPeriod.SEVEN_DAYS;
+	}
+
+	@ConfigItem(
+		keyName = "enableWiseOldManLookups",
+		name = "Enable WOM lookups",
+		description = "Loads selected-player gained summaries from Wise Old Man. This sends the selected player name to wiseoldman.net.",
+		position = 12
+	)
+	default boolean enableWiseOldManLookups()
+	{
+		return true;
 	}
 
 	@ConfigItem(

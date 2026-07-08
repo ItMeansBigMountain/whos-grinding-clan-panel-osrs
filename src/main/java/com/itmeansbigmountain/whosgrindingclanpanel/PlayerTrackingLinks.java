@@ -31,7 +31,7 @@ final class PlayerTrackingLinks
 			+ urlEncode(WhosGrindingClanPanelPlugin.normalizePlayerName(playerName));
 	}
 
-	private static String urlEncode(String value)
+	static String urlEncode(String value)
 	{
 		try
 		{

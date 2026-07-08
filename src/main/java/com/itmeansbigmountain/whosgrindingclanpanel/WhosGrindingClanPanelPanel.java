@@ -8,7 +8,9 @@ import java.awt.Insets;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -18,6 +20,7 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.SwingWorker;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 
@@ -38,6 +41,8 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	private final JPanel content = new JPanel();
 	private final WhosGrindingClanPanelConfig config;
 	private final PanelActions actions;
+	private final WiseOldManGainedClient gainedClient = new WiseOldManGainedClient();
+	private final Map<String, String> grindingSummaryCache = new ConcurrentHashMap<>();
 	private SocialTrackerState state;
 	private SocialSourceFilter filter = SocialSourceFilter.FRIENDS_CHAT;
 	private TrackedMember selectedMember;
@@ -103,7 +108,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 		content.add(Box.createVerticalStrut(8));
 		content.add(sectionTitle("Data links"));
-		content.add(summaryLabel("Period: " + config.gainsPeriod().label() + " • click a player row for WOM/Temple/hiscore URLs."));
+		content.add(summaryLabel("Period: " + config.gainsPeriod().label() + " • click a player row to load WOM gained activity."));
 		content.add(summaryLabel("External enrichment is click/refresh cached; compact vertical detail view saves sidebar space."));
 
 		revalidate();
@@ -191,6 +196,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			public void mouseClicked(java.awt.event.MouseEvent event)
 			{
 				selectedMember = member;
+				ensureGrindingSummaryLoaded(member);
 				rebuild();
 			}
 		});
@@ -218,15 +224,64 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		card.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 		card.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, Short.MAX_VALUE));
 
+		ensureGrindingSummaryLoaded(member);
 		card.add(detailLine("Name", member.displayName(), true));
 		card.add(detailLine("Status", member.status().label() + (member.lastWorld() > 0 ? " • W" + member.lastWorld() : ""), false));
-		card.add(detailLine("Grinding", member.activitySummary(), false));
+		card.add(detailHtmlLine("Grinding", grindingSummaryFor(member), false));
 		card.add(detailLine("Period", config.gainsPeriod().label(), false));
 		card.add(detailLine("WOM", PlayerTrackingLinks.wiseOldManGainedUrl(member.displayName(), config.gainsPeriod()), false));
 		card.add(detailLine("Temple", PlayerTrackingLinks.templePlayerUrl(member.displayName()), false));
 		card.add(detailLine("Hiscore", PlayerTrackingLinks.officialHiscoreUrl(member.displayName()), false));
 		card.add(detailLine("Seen", TIME_FORMAT.format(member.firstSeen()) + " → " + TIME_FORMAT.format(member.lastSeen()), false));
 		return card;
+	}
+
+
+	private void ensureGrindingSummaryLoaded(TrackedMember member)
+	{
+		String cacheKey = grindingCacheKey(member);
+		if (!config.enableWiseOldManLookups())
+		{
+			grindingSummaryCache.put(cacheKey, "Wise Old Man lookups are disabled in config.");
+			return;
+		}
+		if (grindingSummaryCache.containsKey(cacheKey))
+		{
+			return;
+		}
+		grindingSummaryCache.put(cacheKey, "Loading Wise Old Man gains for " + config.gainsPeriod().label() + "...");
+		new SwingWorker<String, Void>()
+		{
+			@Override
+			protected String doInBackground() throws Exception
+			{
+				return gainedClient.fetchGrindingSummary(member.displayName(), config.gainsPeriod());
+			}
+
+			@Override
+			protected void done()
+			{
+				try
+				{
+					grindingSummaryCache.put(cacheKey, get());
+				}
+				catch (Exception ex)
+				{
+					grindingSummaryCache.put(cacheKey, "Could not load Wise Old Man gains. Use the WOM link below.");
+				}
+				rebuild();
+			}
+		}.execute();
+	}
+
+	private String grindingSummaryFor(TrackedMember member)
+	{
+		return grindingSummaryCache.getOrDefault(grindingCacheKey(member), "Loading Wise Old Man gains for " + config.gainsPeriod().label() + "...");
+	}
+
+	private String grindingCacheKey(TrackedMember member)
+	{
+		return TrackedMember.normalizeKey(member.displayName()) + ":" + config.gainsPeriod().wiseOldManPeriod();
 	}
 
 	private TrackedMember selectedVisibleMember(List<TrackedMember> visibleMembers)
@@ -254,9 +309,14 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 	private JLabel detailLine(String labelText, String value, boolean strong)
 	{
+		return detailHtmlLine(labelText, escapeHtml(value), strong);
+	}
+
+	private JLabel detailHtmlLine(String labelText, String htmlValue, boolean strong)
+	{
 		String color = strong ? "#ffffff" : "#d3d3d3";
 		JLabel label = new JLabel("<html><body style='width:" + (PANEL_TEXT_WIDTH - 12) + "px'><span style='color:#d3972b'>"
-			+ escapeHtml(labelText) + ":</span> <span style='color:" + color + "'>" + escapeHtml(value) + "</span></body></html>");
+			+ escapeHtml(labelText) + ":</span> <span style='color:" + color + "'>" + htmlValue + "</span></body></html>");
 		label.setFont(label.getFont().deriveFont(strong ? Font.BOLD : Font.PLAIN, 10f));
 		label.setBorder(BorderFactory.createEmptyBorder(1, 0, 1, 0));
 		return label;

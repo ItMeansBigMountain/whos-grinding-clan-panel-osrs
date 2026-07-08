@@ -209,7 +209,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		TrackedMember member = selectedVisibleMember(visibleMembers);
 		if (member == null)
 		{
-			return compactInfoCard("Select a row to show gains links, current grind summary, source, world, and timestamps.");
+			return compactInfoCard("Select a row to show gains links, current grind summary, world, and timestamps.");
 		}
 
 		JPanel card = new JPanel();
@@ -220,7 +220,6 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 		card.add(detailLine("Name", member.displayName(), true));
 		card.add(detailLine("Status", member.status().label() + (member.lastWorld() > 0 ? " • W" + member.lastWorld() : ""), false));
-		card.add(detailLine("Sources", formatSources(member.sources()), false));
 		card.add(detailLine("Grinding", member.activitySummary(), false));
 		card.add(detailLine("Period", config.gainsPeriod().label(), false));
 		card.add(detailLine("WOM", PlayerTrackingLinks.wiseOldManGainedUrl(member.displayName(), config.gainsPeriod()), false));

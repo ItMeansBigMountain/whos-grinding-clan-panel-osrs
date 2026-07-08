@@ -4,11 +4,9 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.GridLayout;
 import java.awt.Insets;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,10 +16,8 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 
@@ -34,9 +30,6 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		void removeRequested(String memberName);
 	}
 
-	private static final Color HIGH_INTENSITY = new Color(73, 181, 90);
-	private static final Color MID_INTENSITY = new Color(211, 151, 43);
-	private static final Color LOW_INTENSITY = new Color(94, 94, 94);
 	private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss 'UTC'").withZone(ZoneOffset.UTC);
 	private static final int PANEL_TEXT_WIDTH = WhosGrindingPanelDimensions.CONTENT_WIDTH;
 	private static final int MEMBER_TEXT_WIDTH = WhosGrindingPanelDimensions.MEMBER_TEXT_WIDTH;
@@ -47,6 +40,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	private final PanelActions actions;
 	private SocialTrackerState state;
 	private SocialSourceFilter filter = SocialSourceFilter.FRIENDS_CHAT;
+	private TrackedMember selectedMember;
 
 	WhosGrindingClanPanelPanel(WhosGrindingClanPanelConfig config, SocialTrackerState state, PanelActions actions)
 	{
@@ -103,17 +97,14 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			}
 		}
 
-		content.add(Box.createVerticalStrut(10));
-		content.add(sectionTitle("Activity heatmap"));
-		content.add(summaryLabel(config.heatmapHistoryDays() + " day window • "
-			+ config.activeHourThreshold() + "+ events = hot hour"));
-		content.add(summaryLabel("Gains/detail period: " + config.gainsPeriod().label()));
-		content.add(Box.createVerticalStrut(5));
-		content.add(heatmapGrid());
+		content.add(Box.createVerticalStrut(8));
+		content.add(sectionTitle("Selected player"));
+		content.add(detailCardForSelectedMember(visibleMembers));
 
-		content.add(Box.createVerticalStrut(10));
-		content.add(sectionTitle("Data status"));
-		content.add(summaryLabel("Friends tracking is wired. Hiscore/Wise Old Man/TempleOSRS enrichment is next."));
+		content.add(Box.createVerticalStrut(8));
+		content.add(sectionTitle("Data links"));
+		content.add(summaryLabel("Period: " + config.gainsPeriod().label() + " • click a player row for WOM/Temple/hiscore URLs."));
+		content.add(summaryLabel("External enrichment is click/refresh cached; compact vertical detail view saves sidebar space."));
 
 		revalidate();
 		repaint();
@@ -191,7 +182,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		JLabel label = new JLabel("<html><body style='width:" + MEMBER_TEXT_WIDTH + "px'><b>" + activityIcon(member) + " " + escapeHtml(member.displayName()) + "</b><br>"
 			+ escapeHtml(member.status().label() + world + " • " + sources) + "<br>"
 			+ escapeHtml(member.activitySummary()) + "</body></html>");
-		label.setFont(label.getFont().deriveFont(9f));
+		label.setFont(label.getFont().deriveFont(10f));
 		label.setForeground(Color.WHITE);
 		label.setToolTipText("Click for tracker details");
 		label.addMouseListener(new java.awt.event.MouseAdapter()
@@ -199,7 +190,8 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			@Override
 			public void mouseClicked(java.awt.event.MouseEvent event)
 			{
-				showMemberDetails(member);
+				selectedMember = member;
+				rebuild();
 			}
 		});
 		row.add(label, BorderLayout.CENTER);
@@ -212,48 +204,63 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		return row;
 	}
 
-	private JPanel heatmapGrid()
+	private JPanel detailCardForSelectedMember(List<TrackedMember> visibleMembers)
 	{
-		JPanel grid = new JPanel(new GridLayout(4, 6, 1, 1));
-		grid.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		List<Integer> counts = heatmapCountsFromTrackedMembers();
-
-		for (int hour = 0; hour < ClanGrindHeatmapModel.HOURS_PER_DAY; hour++)
+		TrackedMember member = selectedVisibleMember(visibleMembers);
+		if (member == null)
 		{
-			int intensity = ClanGrindHeatmapModel.intensity(counts.get(hour), config.activeHourThreshold());
-			JLabel cell = new JLabel(String.format("%02d", hour), SwingConstants.CENTER);
-			cell.setOpaque(true);
-			cell.setForeground(Color.WHITE);
-			cell.setToolTipText(String.format("%02d:00 UTC • %d tracked updates • %d%% intensity", hour, counts.get(hour), intensity));
-			cell.setBackground(colorForIntensity(intensity));
-			cell.setFont(cell.getFont().deriveFont(9f));
-			cell.setPreferredSize(new Dimension(23, 20));
-			grid.add(cell);
+			return compactInfoCard("Select a row to show gains links, current grind summary, source, world, and timestamps.");
 		}
 
-		return grid;
+		JPanel card = new JPanel();
+		card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+		card.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		card.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+		card.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, Short.MAX_VALUE));
+
+		card.add(detailLine("Name", member.displayName(), true));
+		card.add(detailLine("Status", member.status().label() + (member.lastWorld() > 0 ? " • W" + member.lastWorld() : ""), false));
+		card.add(detailLine("Sources", formatSources(member.sources()), false));
+		card.add(detailLine("Grinding", member.activitySummary(), false));
+		card.add(detailLine("Period", config.gainsPeriod().label(), false));
+		card.add(detailLine("WOM", PlayerTrackingLinks.wiseOldManGainedUrl(member.displayName(), config.gainsPeriod()), false));
+		card.add(detailLine("Temple", PlayerTrackingLinks.templePlayerUrl(member.displayName()), false));
+		card.add(detailLine("Hiscore", PlayerTrackingLinks.officialHiscoreUrl(member.displayName()), false));
+		card.add(detailLine("Seen", TIME_FORMAT.format(member.firstSeen()) + " → " + TIME_FORMAT.format(member.lastSeen()), false));
+		return card;
 	}
 
-	private List<Integer> heatmapCountsFromTrackedMembers()
+	private TrackedMember selectedVisibleMember(List<TrackedMember> visibleMembers)
 	{
-		if (state.members().isEmpty())
+		if (selectedMember == null)
 		{
-			return Arrays.asList(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+			return visibleMembers.isEmpty() ? null : visibleMembers.get(0);
 		}
-		return ClanGrindHeatmapModel.hourlyBuckets(state.members().stream().map(TrackedMember::lastSeen).collect(Collectors.toList()));
+		String selectedName = WhosGrindingClanPanelPlugin.normalizePlayerName(selectedMember.displayName());
+		return visibleMembers.stream()
+			.filter(member -> WhosGrindingClanPanelPlugin.normalizePlayerName(member.displayName()).equals(selectedName))
+			.findFirst()
+			.orElse(visibleMembers.isEmpty() ? null : visibleMembers.get(0));
 	}
 
-	private Color colorForIntensity(int intensity)
+	private JPanel compactInfoCard(String text)
 	{
-		if (intensity >= 100)
-		{
-			return HIGH_INTENSITY;
-		}
-		if (intensity >= 50)
-		{
-			return MID_INTENSITY;
-		}
-		return LOW_INTENSITY;
+		JPanel card = new JPanel(new BorderLayout());
+		card.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		card.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+		card.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, 52));
+		card.add(summaryLabel(text), BorderLayout.CENTER);
+		return card;
+	}
+
+	private JLabel detailLine(String labelText, String value, boolean strong)
+	{
+		String color = strong ? "#ffffff" : "#d3d3d3";
+		JLabel label = new JLabel("<html><body style='width:" + (PANEL_TEXT_WIDTH - 12) + "px'><span style='color:#d3972b'>"
+			+ escapeHtml(labelText) + ":</span> <span style='color:" + color + "'>" + escapeHtml(value) + "</span></body></html>");
+		label.setFont(label.getFont().deriveFont(strong ? Font.BOLD : Font.PLAIN, 10f));
+		label.setBorder(BorderFactory.createEmptyBorder(1, 0, 1, 0));
+		return label;
 	}
 
 	private String formatSources(Set<TrackedMemberSource> sources)
@@ -272,21 +279,6 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			return "◇";
 		}
 		return "○";
-	}
-
-	private void showMemberDetails(TrackedMember member)
-	{
-		String details = "Name: " + member.displayName()
-			+ "\nStatus: " + member.status().label()
-			+ (member.lastWorld() > 0 ? "\nWorld: " + member.lastWorld() : "")
-			+ "\nSources: " + formatSources(member.sources())
-			+ "\nGains period: " + config.gainsPeriod().label()
-			+ "\nWise Old Man gained: " + PlayerTrackingLinks.wiseOldManGainedUrl(member.displayName(), config.gainsPeriod())
-			+ "\nFirst seen: " + TIME_FORMAT.format(member.firstSeen())
-			+ "\nLast seen: " + TIME_FORMAT.format(member.lastSeen())
-			+ "\nLast status change: " + TIME_FORMAT.format(member.lastStatusChange())
-			+ "\nSummary: " + member.activitySummary();
-		JOptionPane.showMessageDialog(this, details, member.displayName() + " tracker", JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	private String escapeHtml(String text)

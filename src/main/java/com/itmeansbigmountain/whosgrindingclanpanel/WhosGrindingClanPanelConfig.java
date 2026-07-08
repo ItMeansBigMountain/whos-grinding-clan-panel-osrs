@@ -43,30 +43,6 @@ public interface WhosGrindingClanPanelConfig extends Config
 		return WhosGrindingClanPanelPlugin.DEFAULT_MAX_PLAYERS_SHOWN;
 	}
 
-	@Range(min = 1, max = 30)
-	@ConfigItem(
-		keyName = "heatmapHistoryDays",
-		name = "Heatmap history days",
-		description = "Number of days future activity heatmap collection should include",
-		position = 3
-	)
-	default int heatmapHistoryDays()
-	{
-		return 7;
-	}
-
-	@Range(min = 1, max = 24)
-	@ConfigItem(
-		keyName = "activeHourThreshold",
-		name = "Active hour threshold",
-		description = "Minimum number of XP gain events in an hour before that hour is marked active",
-		position = 4
-	)
-	default int activeHourThreshold()
-	{
-		return 3;
-	}
-
 	@ConfigItem(
 		keyName = "trackFriendsList",
 		name = "Track friends list",

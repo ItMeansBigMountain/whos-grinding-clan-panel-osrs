@@ -23,4 +23,22 @@ public class PlayerTrackingLinksTest
 			PlayerTrackingLinks.wiseOldManGainedUrl("Skiller Alt", GainsPeriod.THIRTY_DAYS)
 		);
 	}
+
+	@Test
+	public void buildsTemplePlayerLinks()
+	{
+		assertEquals(
+			"https://templeosrs.com/player/overview.php?player=Skiller+Alt",
+			PlayerTrackingLinks.templePlayerUrl("Skiller Alt")
+		);
+	}
+
+	@Test
+	public void buildsOfficialHiscoreLinks()
+	{
+		assertEquals(
+			"https://secure.runescape.com/m=hiscore_oldschool/overall?table=0&user=Oyama",
+			PlayerTrackingLinks.officialHiscoreUrl("Oyama")
+		);
+	}
 }

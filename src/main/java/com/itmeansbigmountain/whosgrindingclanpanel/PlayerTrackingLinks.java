@@ -19,6 +19,18 @@ final class PlayerTrackingLinks
 			+ "/gained?period=" + period.wiseOldManPeriod();
 	}
 
+	static String templePlayerUrl(String playerName)
+	{
+		return "https://templeosrs.com/player/overview.php?player="
+			+ urlEncode(WhosGrindingClanPanelPlugin.normalizePlayerName(playerName));
+	}
+
+	static String officialHiscoreUrl(String playerName)
+	{
+		return "https://secure.runescape.com/m=hiscore_oldschool/overall?table=0&user="
+			+ urlEncode(WhosGrindingClanPanelPlugin.normalizePlayerName(playerName));
+	}
+
 	private static String urlEncode(String value)
 	{
 		try

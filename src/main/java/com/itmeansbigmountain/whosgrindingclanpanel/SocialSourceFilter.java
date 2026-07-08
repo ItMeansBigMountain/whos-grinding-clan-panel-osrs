@@ -3,6 +3,7 @@ package com.itmeansbigmountain.whosgrindingclanpanel;
 enum SocialSourceFilter
 {
 	FRIENDS_CHAT("Friends Chat"),
+	CLAN_CHAT("Clan Chat"),
 	FRIENDS("Friends List");
 
 	private final String label;
@@ -31,6 +32,8 @@ enum SocialSourceFilter
 				return member.hasSource(TrackedMemberSource.FRIEND);
 			case FRIENDS_CHAT:
 				return member.hasSource(TrackedMemberSource.FRIENDS_CHAT);
+			case CLAN_CHAT:
+				return member.hasSource(TrackedMemberSource.CLAN);
 			default:
 				return false;
 		}

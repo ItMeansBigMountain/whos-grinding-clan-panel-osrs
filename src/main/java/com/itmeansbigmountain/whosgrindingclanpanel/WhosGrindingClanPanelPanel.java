@@ -190,6 +190,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		JLabel label = new JLabel("<html><body style='width:" + MEMBER_TEXT_WIDTH + "px'><b>" + activityIcon(member) + " " + escapeHtml(member.displayName()) + "</b><br>"
 			+ escapeHtml(member.status().label() + world + " • " + sources) + "<br>"
 			+ escapeHtml(member.activitySummary()) + "</body></html>");
+		label.setFont(label.getFont().deriveFont(9f));
 		label.setForeground(Color.WHITE);
 		label.setToolTipText("Click for tracker details");
 		label.addMouseListener(new java.awt.event.MouseAdapter()

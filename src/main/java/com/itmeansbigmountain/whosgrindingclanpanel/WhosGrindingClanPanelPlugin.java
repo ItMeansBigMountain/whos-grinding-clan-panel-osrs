@@ -17,6 +17,8 @@ import net.runelite.api.FriendContainer;
 import net.runelite.api.FriendsChatManager;
 import net.runelite.api.FriendsChatMember;
 import net.runelite.api.GameState;
+import net.runelite.api.clan.ClanChannel;
+import net.runelite.api.clan.ClanChannelMember;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
@@ -199,6 +201,10 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 		{
 			snapshots.add(scanFriendsChat());
 		}
+		if (config.trackClanChat())
+		{
+			snapshots.add(scanClanChat());
+		}
 		if (snapshots.isEmpty())
 		{
 			snapshots.add(SocialSourceSnapshot.unsupported(TrackedMemberSource.FRIEND, "All tracking sources are disabled in config."));
@@ -242,6 +248,25 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 			}
 		}
 		return SocialSourceSnapshot.observedMembers(TrackedMemberSource.FRIENDS_CHAT, members);
+	}
+
+	private SocialSourceSnapshot scanClanChat()
+	{
+		ClanChannel clanChannel = client.getClanChannel();
+		if (clanChannel == null || clanChannel.getMembers() == null)
+		{
+			return SocialSourceSnapshot.unsupported(TrackedMemberSource.CLAN, "Clan chat is not available yet.");
+		}
+
+		List<SocialMemberSnapshot> members = new ArrayList<>();
+		for (ClanChannelMember clanMember : clanChannel.getMembers())
+		{
+			if (clanMember != null)
+			{
+				members.add(SocialMemberSnapshot.of(clanMember.getName(), clanMember.getWorld(), sourceSummary("Clan chat", clanMember.getWorld())));
+			}
+		}
+		return SocialSourceSnapshot.observedMembers(TrackedMemberSource.CLAN, members);
 	}
 
 	private String sourceSummary(String sourceName, int world)

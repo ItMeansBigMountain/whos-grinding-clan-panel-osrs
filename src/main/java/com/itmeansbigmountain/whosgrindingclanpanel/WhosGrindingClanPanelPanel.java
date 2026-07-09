@@ -29,8 +29,6 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	interface PanelActions
 	{
 		void refreshRequested();
-
-		void removeRequested(String memberName);
 	}
 
 	private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss 'UTC'").withZone(ZoneOffset.UTC);

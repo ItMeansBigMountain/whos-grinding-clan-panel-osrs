@@ -1,7 +1,7 @@
 {
   "name": "Who's Grinding Panel",
   "version": "1.0.0",
-  "description": "Tracks friends and friends chat activity in a compact RuneLite side panel.",
+  "description": "Shows compact Wise Old Man gains for friends, friends chat, and clan members.",
   "author": "Oyama",
   "tags": [
     "friends",

@@ -32,7 +32,7 @@ import net.runelite.client.ui.NavigationButton;
 @Slf4j
 @PluginDescriptor(
 	name = WhosGrindingClanPanelPlugin.PLUGIN_NAME,
-	description = "Tracks friends and friends chat members for live social activity updates.",
+	description = "Shows compact WOM gains for friends, friends chat, and clan members.",
 	tags = {"friends", "grind", "activity", "skills", "xp"}
 )
 public class WhosGrindingClanPanelPlugin extends Plugin
@@ -45,9 +45,6 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 	static final int MAX_ACTIVITY_WINDOW_MINUTES = 240;
 	static final int MIN_PLAYERS_SHOWN = 1;
 	static final int MAX_PLAYERS_SHOWN = 25;
-	static final int DEFAULT_HEATMAP_HISTORY_DAYS = 7;
-	static final int DEFAULT_ACTIVE_HOUR_THRESHOLD = 3;
-
 	@Inject
 	private Client client;
 
@@ -56,9 +53,6 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 
 	@Inject
 	private ClientToolbar clientToolbar;
-
-	@Inject
-	private ConfigManager configManager;
 
 	private WhosGrindingClanPanelPanel panel;
 	private NavigationButton navButton;
@@ -79,16 +73,6 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 			{
 				rescanSocialSources("manual refresh");
 				refreshPanel();
-			}
-
-			@Override
-			public void removeRequested(String memberName)
-			{
-				if (trackingService.removeMember(memberName))
-				{
-					configManager.setConfiguration(CONFIG_GROUP, "ignoredMembers", trackingService.serializeIgnoredMembers());
-					refreshPanel();
-				}
 			}
 		});
 		navButton = NavigationButton.builder()

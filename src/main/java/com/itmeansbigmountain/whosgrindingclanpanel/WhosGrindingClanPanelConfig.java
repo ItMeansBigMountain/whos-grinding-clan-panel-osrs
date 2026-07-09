@@ -114,7 +114,7 @@ public interface WhosGrindingClanPanelConfig extends Config
 	@ConfigItem(
 		keyName = "gainsPeriod",
 		name = "Gains period",
-		description = "Time window used for Wise Old Man gained summaries and player detail links",
+		description = "Time window used for Wise Old Man and official hiscores local-snapshot gained summaries",
 		position = 11
 	)
 	default GainsPeriod gainsPeriod()
@@ -125,7 +125,7 @@ public interface WhosGrindingClanPanelConfig extends Config
 	@ConfigItem(
 		keyName = "enableWiseOldManLookups",
 		name = "Enable WOM lookups",
-		description = "Loads selected-player gained summaries from Wise Old Man. This sends the selected player name to wiseoldman.net.",
+		description = "Loads selected-player gained summaries from Wise Old Man, falling back to official OSRS hiscores snapshots. This sends the selected player name to wiseoldman.net and secure.runescape.com.",
 		position = 12
 	)
 	default boolean enableWiseOldManLookups()

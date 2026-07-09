@@ -26,50 +26,75 @@ final class OfficialHiscoresGainedClient
 		"Fletching", "Fishing", "Firemaking", "Crafting", "Smithing", "Mining", "Herblore", "Agility", "Thieving", "Slayer",
 		"Farming", "Runecrafting", "Hunter", "Construction"
 	};
+	private static final String[] ACTIVITIES = {
+		"League Points", "Deadman Points", "Bounty Hunter", "Bounty Hunter Rogue", "BH Legacy Hunter", "BH Legacy Rogue",
+		"Clue Scrolls All", "Clue Scrolls Beginner", "Clue Scrolls Easy", "Clue Scrolls Medium", "Clue Scrolls Hard",
+		"Clue Scrolls Elite", "Clue Scrolls Master", "LMS", "PvP Arena", "Soul Wars", "Rifts Closed", "Colosseum Glory",
+		"Collections Logged"
+	};
+	private static final String[] BOSSES = {
+		"Abyssal Sire", "Alchemical Hydra", "Amoxliatl", "Araxxor", "Artio", "Barrows Chests", "Bryophyta", "Callisto",
+		"Calvar'ion", "Cerb", "CoX", "CM CoX", "Chaos Elemental", "Chaos Fanatic", "Zily", "Corp", "Crazy Archaeologist",
+		"Prime", "Rex", "Supreme", "Deranged Archaeologist", "Doom", "Duke", "Bandos", "Mole", "GG", "Hespori", "Kalphite Queen",
+		"KBD", "Kraken", "Kree'arra", "K'ril", "Lunar Chests", "Mimic", "Nex", "NM", "Phosani", "Obor", "Phantom Muspah",
+		"Sarach", "Scorpia", "Scurrius", "Skotizo", "Sol Heredit", "Spindel", "Tempoross", "Gauntlet", "CG", "Huey", "Levi",
+		"Whisperer", "ToB", "HMT", "Thermy", "ToA", "ToA Expert", "TzKal-Zuk", "TzTok-Jad", "Vard", "Venenatis", "Vet'ion",
+		"Vorkath", "Wintertodt", "Zalc", "Zulrah"
+	};
 	private static final int MAX_SKILL_LINES = 4;
+	private static final int MAX_BOSS_LINES = 3;
+	private static final int MAX_ACTIVITY_LINES = 3;
 
 	String fetchGrindingSummary(String playerName, GainsPeriod period) throws IOException
 	{
 		String normalizedName = WhosGrindingClanPanelPlugin.normalizePlayerName(playerName);
 		GainsPeriod safePeriod = period == null ? GainsPeriod.SEVEN_DAYS : period;
-		Map<String, Long> currentXp = fetchCurrentXp(normalizedName);
-		HiscoreSnapshot current = new HiscoreSnapshot(Instant.now().getEpochSecond(), currentXp);
+		HiscoreValues currentValues = fetchCurrentValues(normalizedName);
+		HiscoreSnapshot current = new HiscoreSnapshot(Instant.now().getEpochSecond(), currentValues);
 		Path snapshotFile = snapshotFile(normalizedName);
 		List<HiscoreSnapshot> snapshots = readSnapshots(snapshotFile);
 		HiscoreSnapshot baseline = findBaseline(snapshots, current.timestamp - safePeriod.days() * 86400L);
 		writeSnapshots(snapshotFile, snapshots, current);
 		if (baseline == null)
 		{
-			return "Official hiscores<br>baseline saved.<br>XP gains will<br>show after the<br>next scan for<br>this period.";
+			return "Official hiscores<br>baseline saved.<br>Gains show after<br>the next scan for<br>this period.";
 		}
-		List<GainedSkill> gainedSkills = new ArrayList<>();
-		for (Map.Entry<String, Long> entry : current.xp.entrySet())
-		{
-			long previous = baseline.xp.getOrDefault(entry.getKey(), entry.getValue());
-			long gained = Math.max(0, entry.getValue() - previous);
-			if (gained > 0 && !"Overall".equals(entry.getKey()))
-			{
-				gainedSkills.add(new GainedSkill(entry.getKey(), gained));
-			}
-		}
-		List<GainedSkill> topSkills = gainedSkills.stream()
-			.sorted(Comparator.comparingLong((GainedSkill skill) -> skill.gained).reversed())
-			.limit(MAX_SKILL_LINES)
-			.collect(Collectors.toList());
-		if (topSkills.isEmpty())
-		{
-			return "No hiscores XP<br>gains found for<br>this saved period.<br>Try again after<br>more XP changes.";
-		}
-		List<String> lines = new ArrayList<>();
-		lines.add("<b>Skills</b>:");
-		for (GainedSkill skill : topSkills)
-		{
-			lines.add("▴ " + skill.name + ": <b>+" + formatNumber(skill.gained) + " xp</b> (XP)");
-		}
-		return String.join("<br>", lines);
+		return summarizeDelta(current.values, baseline.values);
 	}
 
-	private static Map<String, Long> fetchCurrentXp(String playerName) throws IOException
+	static String summarizeDelta(HiscoreValues current, HiscoreValues baseline)
+	{
+		List<String> sections = new ArrayList<>();
+		addSection(sections, "Skills", gainedLines(current.skills, baseline.skills, "XP", "xp", "▴", MAX_SKILL_LINES), MAX_SKILL_LINES);
+		addSection(sections, "Bosses", gainedLines(current.bosses, baseline.bosses, "KC", "kc", "⚔", MAX_BOSS_LINES), MAX_BOSS_LINES);
+		addSection(sections, "Activities", gainedLines(current.activities, baseline.activities, "Score", "score", "★", MAX_ACTIVITY_LINES), MAX_ACTIVITY_LINES);
+		if (sections.isEmpty())
+		{
+			return "No official<br>hiscores gains<br>found for this<br>saved period.<br>Try again after<br>more changes.";
+		}
+		return String.join("<br>", sections);
+	}
+
+	private static List<GainedLine> gainedLines(Map<String, Long> current, Map<String, Long> baseline, String label, String suffix, String icon, int limit)
+	{
+		return current.entrySet().stream()
+			.filter(entry -> !"Overall".equals(entry.getKey()))
+			.map(entry -> new GainedLine(entry.getKey(), Math.max(0, entry.getValue() - baseline.getOrDefault(entry.getKey(), entry.getValue())), label, suffix, icon))
+			.filter(line -> line.gained > 0)
+			.sorted(Comparator.comparingLong((GainedLine line) -> line.gained).reversed())
+			.limit(limit)
+			.collect(Collectors.toList());
+	}
+
+	private static void addSection(List<String> sections, String title, List<GainedLine> lines, int maxLines)
+	{
+		if (!lines.isEmpty())
+		{
+			sections.add("<b>" + title + "</b>:<br>" + lines.stream().limit(maxLines).map(GainedLine::format).collect(Collectors.joining("<br>")));
+		}
+	}
+
+	private static HiscoreValues fetchCurrentValues(String playerName) throws IOException
 	{
 		HttpURLConnection connection = (HttpURLConnection) new URL(HISCORES_URL + PlayerTrackingLinks.urlEncode(playerName)).openConnection();
 		connection.setRequestMethod("GET");
@@ -81,24 +106,50 @@ final class OfficialHiscoresGainedClient
 		{
 			throw new IOException("Official hiscores returned HTTP " + responseCode);
 		}
-		Map<String, Long> xp = new HashMap<>();
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8)))
 		{
-			for (int index = 0; index < SKILLS.length; index++)
+			return parseLiteCsv(reader.lines().collect(Collectors.toList()));
+		}
+	}
+
+	static HiscoreValues parseLiteCsv(List<String> rows)
+	{
+		HiscoreValues values = new HiscoreValues();
+		int row = 0;
+		row = parseSection(rows, row, SKILLS, values.skills, 2);
+		row = parseSection(rows, row, ACTIVITIES, values.activities, 1);
+		parseSection(rows, row, BOSSES, values.bosses, 1);
+		return values;
+	}
+
+	private static int parseSection(List<String> rows, int start, String[] names, Map<String, Long> target, int valueIndex)
+	{
+		int row = start;
+		for (String name : names)
+		{
+			if (row >= rows.size())
 			{
-				String line = reader.readLine();
-				if (line == null)
+				break;
+			}
+			String[] parts = rows.get(row).split(",");
+			if (parts.length > valueIndex)
+			{
+				try
 				{
-					break;
+					long value = Long.parseLong(parts[valueIndex]);
+					if (value >= 0)
+					{
+						target.put(name, value);
+					}
 				}
-				String[] parts = line.split(",");
-				if (parts.length >= 3)
+				catch (NumberFormatException ignored)
 				{
-					xp.put(SKILLS[index], Long.parseLong(parts[2]));
+					// Ignore malformed official rows rather than breaking the whole fallback.
 				}
 			}
+			row++;
 		}
-		return xp;
+		return row;
 	}
 
 	private static Path snapshotFile(String playerName)
@@ -121,16 +172,7 @@ final class OfficialHiscoresGainedClient
 			{
 				continue;
 			}
-			Map<String, Long> xp = new HashMap<>();
-			for (String skillPart : parts[1].split(";"))
-			{
-				String[] skill = skillPart.split("=", 2);
-				if (skill.length == 2)
-				{
-					xp.put(skill[0], Long.parseLong(skill[1]));
-				}
-			}
-			snapshots.add(new HiscoreSnapshot(Long.parseLong(parts[0]), xp));
+			snapshots.add(new HiscoreSnapshot(Long.parseLong(parts[0]), HiscoreValues.deserialize(parts[1])));
 		}
 		return snapshots;
 	}
@@ -173,35 +215,109 @@ final class OfficialHiscoresGainedClient
 		return String.format(Locale.US, "%,d", value);
 	}
 
+	static final class HiscoreValues
+	{
+		private final Map<String, Long> skills = new HashMap<>();
+		private final Map<String, Long> activities = new HashMap<>();
+		private final Map<String, Long> bosses = new HashMap<>();
+
+		private String serialize()
+		{
+			return "S{" + serializeMap(skills) + "}|A{" + serializeMap(activities) + "}|B{" + serializeMap(bosses) + "}";
+		}
+
+		private static HiscoreValues deserialize(String value)
+		{
+			HiscoreValues values = new HiscoreValues();
+			if (!value.contains("S{"))
+			{
+				// Backwards compatibility with older skill-only snapshots.
+				deserializeMap(value, values.skills);
+				return values;
+			}
+			deserializeMap(extract(value, "S{"), values.skills);
+			deserializeMap(extract(value, "A{"), values.activities);
+			deserializeMap(extract(value, "B{"), values.bosses);
+			return values;
+		}
+
+		private static String extract(String value, String prefix)
+		{
+			int start = value.indexOf(prefix);
+			if (start < 0)
+			{
+				return "";
+			}
+			start += prefix.length();
+			int end = value.indexOf('}', start);
+			return end < 0 ? "" : value.substring(start, end);
+		}
+	}
+
+	private static String serializeMap(Map<String, Long> values)
+	{
+		return values.entrySet().stream()
+			.sorted(Map.Entry.comparingByKey())
+			.map(entry -> entry.getKey() + "=" + entry.getValue())
+			.collect(Collectors.joining(";"));
+	}
+
+	private static void deserializeMap(String text, Map<String, Long> target)
+	{
+		for (String part : text.split(";"))
+		{
+			String[] item = part.split("=", 2);
+			if (item.length == 2)
+			{
+				try
+				{
+					target.put(item[0], Long.parseLong(item[1]));
+				}
+				catch (NumberFormatException ignored)
+				{
+					// Keep loading the rest of the snapshot.
+				}
+			}
+		}
+	}
+
 	private static final class HiscoreSnapshot
 	{
 		private final long timestamp;
-		private final Map<String, Long> xp;
+		private final HiscoreValues values;
 
-		private HiscoreSnapshot(long timestamp, Map<String, Long> xp)
+		private HiscoreSnapshot(long timestamp, HiscoreValues values)
 		{
 			this.timestamp = timestamp;
-			this.xp = xp;
+			this.values = values;
 		}
 
 		private String serialize()
 		{
-			return timestamp + "," + xp.entrySet().stream()
-				.sorted(Map.Entry.comparingByKey())
-				.map(entry -> entry.getKey() + "=" + entry.getValue())
-				.collect(Collectors.joining(";"));
+			return timestamp + "," + values.serialize();
 		}
 	}
 
-	private static final class GainedSkill
+	private static final class GainedLine
 	{
 		private final String name;
 		private final long gained;
+		private final String label;
+		private final String suffix;
+		private final String icon;
 
-		private GainedSkill(String name, long gained)
+		private GainedLine(String name, long gained, String label, String suffix, String icon)
 		{
 			this.name = name;
 			this.gained = gained;
+			this.label = label;
+			this.suffix = suffix;
+			this.icon = icon;
+		}
+
+		private String format()
+		{
+			return icon + " " + name + ": <b>+" + formatNumber(gained) + " " + suffix + "</b> (" + label + ")";
 		}
 	}
 }

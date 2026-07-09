@@ -101,7 +101,7 @@ gradlew.bat run --no-daemon --console=plain
 
 Wise Old Man calls are click-to-fetch and cached by player + period. The plugin does not poll every visible member every tick. If a selected player is not tracked or gained data is unavailable, it attempts to start/update WOM tracking with `POST /v2/players/{name}` and retries the gained endpoint.
 
-Official OSRS hiscores are used as a fallback for skill XP. Because the official endpoint has no historical gained API, the plugin stores local snapshots under the RuneLite user directory and compares the current snapshot against the best saved baseline for the selected period. First scan may show a baseline-saved message; later scans can show XP gained.
+If WOM still cannot produce useful positive gains, the plugin falls back to official OSRS hiscores. Official hiscores only expose current totals, so the plugin saves a local snapshot under the player's RuneLite home directory and compares future snapshots for the configured period. This fallback can show skill XP, boss KC, and activity/minigame score deltas after a baseline exists. If there is no previous snapshot yet, the card says the official hiscores baseline was saved and gains will show on a later scan.
 
 Keep network calls and cache refreshes off the RuneLite game thread. Show user-visible loading/empty/failure states instead of blocking or silently failing.
 

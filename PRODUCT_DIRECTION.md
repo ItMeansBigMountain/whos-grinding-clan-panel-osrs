@@ -22,6 +22,7 @@ The current product slice is no longer just a scaffold. It includes:
 - Inline expandable/collapsible player cards.
 - A current-player row pinned at the top across all source tabs, so the logged-in user can inspect their own public WOM grinding view.
 - Wise Old Man click-to-fetch gained summaries for the selected gains period.
+- Official OSRS hiscores local-snapshot fallback for skills, boss KC, and activity score deltas when WOM has no useful data.
 - WOM start/update fallback for untracked players.
 - Grinding-only card details: skills XP, boss KC, and activity/minigame scores.
 - One stat per line in the expanded card.
@@ -66,7 +67,7 @@ The current product slice is no longer just a scaffold. It includes:
 - Cache by player + gains period.
 - Keep network calls off the RuneLite game thread.
 - Expose config disclosure: selected player names are sent to Wise Old Man when WOM lookups are enabled.
-- If WOM cannot find gains, start/update tracking via `POST /v2/players/{name}`, retry, then show a short wrapped explanation if no positive gains exist.
+- If WOM cannot find gains, start/update tracking via `POST /v2/players/{name}`, retry, then fall back to official OSRS hiscores local snapshots. Official hiscores only expose current totals, so first use may only save a baseline; later checks can show skill XP, boss KC, and activity/minigame score deltas for the selected period.
 
 ## Remaining polish before Plugin Hub submission
 

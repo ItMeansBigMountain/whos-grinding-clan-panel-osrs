@@ -5,13 +5,12 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
+import java.awt.Cursor;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -56,7 +55,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 		setLayout(new BorderLayout());
 		content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-		content.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+		content.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 		content.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
 		JScrollPane scrollPane = new JScrollPane(content);
@@ -92,24 +91,19 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		List<TrackedMember> visibleMembers = state.filteredMembers(filter);
 		if (visibleMembers.isEmpty())
 		{
-			content.add(statusLabel("No tracked members for " + filter.label() + ". Press ↻ after logging in or enable the source in config."));
+			content.add(statusLabel("No tracked members for " + filter.label() + ". Press ↻ after logging in."));
 		}
 		else
 		{
 			for (TrackedMember member : visibleMembers)
 			{
 				content.add(memberRow(member));
+				if (isSelected(member))
+				{
+					content.add(expandedGrindingCard(member));
+				}
 			}
 		}
-
-		content.add(Box.createVerticalStrut(8));
-		content.add(sectionTitle("Selected player"));
-		content.add(detailCardForSelectedMember(visibleMembers));
-
-		content.add(Box.createVerticalStrut(8));
-		content.add(sectionTitle("Data links"));
-		content.add(summaryLabel("Period: " + config.gainsPeriod().label() + " • click a player row to load WOM gained activity."));
-		content.add(summaryLabel("External enrichment is click/refresh cached; compact vertical detail view saves sidebar space."));
 
 		revalidate();
 		repaint();
@@ -124,7 +118,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 		JComboBox<SocialSourceFilter> sourceDropdown = new JComboBox<>(SocialSourceFilter.values());
 		sourceDropdown.setSelectedItem(filter);
-		sourceDropdown.setFont(sourceDropdown.getFont().deriveFont(10f));
+		sourceDropdown.setFont(sourceDropdown.getFont().deriveFont(11f));
 		sourceDropdown.setFocusable(false);
 		sourceDropdown.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH - 30, CONTROL_HEIGHT));
 		sourceDropdown.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH - 30, CONTROL_HEIGHT));
@@ -175,67 +169,69 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 	private JPanel memberRow(TrackedMember member)
 	{
-		JPanel row = new JPanel(new BorderLayout(3, 0));
-		row.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		JPanel row = new JPanel(new BorderLayout(0, 0));
+		row.setBackground(isSelected(member) ? ColorScheme.DARK_GRAY_HOVER_COLOR : ColorScheme.DARKER_GRAY_COLOR);
 		row.setBorder(BorderFactory.createCompoundBorder(
 			BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.DARK_GRAY_COLOR),
-			BorderFactory.createEmptyBorder(4, 4, 4, 4)
+			BorderFactory.createEmptyBorder(2, 2, 2, 2)
 		));
+		row.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, 28));
+		row.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH, 28));
+		row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-		String sources = formatSources(member.sources());
-		String world = member.lastWorld() > 0 ? " • W" + member.lastWorld() : "";
-		JLabel label = new JLabel("<html><body style='width:" + MEMBER_TEXT_WIDTH + "px'><b>" + activityIcon(member) + " " + escapeHtml(member.displayName()) + "</b><br>"
-			+ escapeHtml(member.status().label() + world + " • " + sources) + "<br>"
-			+ escapeHtml(member.activitySummary()) + "</body></html>");
-		label.setFont(label.getFont().deriveFont(10f));
+		String world = member.lastWorld() > 0 ? " W" + member.lastWorld() : "";
+		String expanded = isSelected(member) ? "▾ " : "▸ ";
+		JLabel label = new JLabel("<html><body style='width:" + MEMBER_TEXT_WIDTH + "px'>"
+			+ "<b>" + expanded + activityIcon(member) + " " + escapeHtml(member.displayName()) + "</b>"
+			+ " <span style='color:#b8b8b8'>" + escapeHtml(member.status().label() + world) + "</span></body></html>");
+		label.setFont(label.getFont().deriveFont(11f));
 		label.setForeground(Color.WHITE);
-		label.setToolTipText("Click for tracker details");
-		label.addMouseListener(new java.awt.event.MouseAdapter()
+		label.setToolTipText("Click to expand/collapse grinding details");
+
+		java.awt.event.MouseAdapter toggleListener = new java.awt.event.MouseAdapter()
 		{
 			@Override
 			public void mouseClicked(java.awt.event.MouseEvent event)
 			{
-				selectedMember = member;
-				ensureGrindingSummaryLoaded(member);
+				if (isSelected(member))
+				{
+					selectedMember = null;
+				}
+				else
+				{
+					selectedMember = member;
+					ensureGrindingSummaryLoaded(member);
+				}
 				rebuild();
 			}
-		});
+		};
+		row.addMouseListener(toggleListener);
+		label.addMouseListener(toggleListener);
 		row.add(label, BorderLayout.CENTER);
-
-		JButton removeButton = new JButton("×");
-		removeButton.setToolTipText("Remove from tracking");
-		removeButton.setMargin(new Insets(0, 4, 0, 4));
-		removeButton.addActionListener(event -> actions.removeRequested(member.displayName()));
-		row.add(removeButton, BorderLayout.EAST);
 		return row;
 	}
 
-	private JPanel detailCardForSelectedMember(List<TrackedMember> visibleMembers)
+	private JPanel expandedGrindingCard(TrackedMember member)
 	{
-		TrackedMember member = selectedVisibleMember(visibleMembers);
-		if (member == null)
-		{
-			return compactInfoCard("Select a row to show gains links, current grind summary, world, and timestamps.");
-		}
-
 		JPanel card = new JPanel();
 		card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
 		card.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		card.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+		card.setBorder(BorderFactory.createCompoundBorder(
+			BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.DARK_GRAY_COLOR),
+			BorderFactory.createEmptyBorder(2, 2, 4, 2)
+		));
 		card.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, Short.MAX_VALUE));
 
 		ensureGrindingSummaryLoaded(member);
-		card.add(detailLine("Name", member.displayName(), true));
-		card.add(detailLine("Status", member.status().label() + (member.lastWorld() > 0 ? " • W" + member.lastWorld() : ""), false));
-		card.add(detailHtmlLine("Grinding", grindingSummaryFor(member), false));
-		card.add(detailLine("Period", config.gainsPeriod().label(), false));
-		card.add(detailLine("WOM", PlayerTrackingLinks.wiseOldManGainedUrl(member.displayName(), config.gainsPeriod()), false));
-		card.add(detailLine("Temple", PlayerTrackingLinks.templePlayerUrl(member.displayName()), false));
-		card.add(detailLine("Hiscore", PlayerTrackingLinks.officialHiscoreUrl(member.displayName()), false));
-		card.add(detailLine("Seen", TIME_FORMAT.format(member.firstSeen()) + " → " + TIME_FORMAT.format(member.lastSeen()), false));
+		card.add(detailHtmlLine("Grinding " + config.gainsPeriod().label(), grindingSummaryFor(member), false));
 		return card;
 	}
 
+	private boolean isSelected(TrackedMember member)
+	{
+		return selectedMember != null
+			&& TrackedMember.normalizeKey(selectedMember.displayName()).equals(TrackedMember.normalizeKey(member.displayName()));
+	}
 
 	private void ensureGrindingSummaryLoaded(TrackedMember member)
 	{
@@ -267,7 +263,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 				}
 				catch (Exception ex)
 				{
-					grindingSummaryCache.put(cacheKey, "Could not load Wise Old Man gains. Use the WOM link below.");
+					grindingSummaryCache.put(cacheKey, "Could not load Wise Old Man gains. Try refresh or check the player on Wise Old Man.");
 				}
 				rebuild();
 			}
@@ -284,34 +280,6 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		return TrackedMember.normalizeKey(member.displayName()) + ":" + config.gainsPeriod().wiseOldManPeriod();
 	}
 
-	private TrackedMember selectedVisibleMember(List<TrackedMember> visibleMembers)
-	{
-		if (selectedMember == null)
-		{
-			return visibleMembers.isEmpty() ? null : visibleMembers.get(0);
-		}
-		String selectedName = WhosGrindingClanPanelPlugin.normalizePlayerName(selectedMember.displayName());
-		return visibleMembers.stream()
-			.filter(member -> WhosGrindingClanPanelPlugin.normalizePlayerName(member.displayName()).equals(selectedName))
-			.findFirst()
-			.orElse(visibleMembers.isEmpty() ? null : visibleMembers.get(0));
-	}
-
-	private JPanel compactInfoCard(String text)
-	{
-		JPanel card = new JPanel(new BorderLayout());
-		card.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		card.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-		card.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, 52));
-		card.add(summaryLabel(text), BorderLayout.CENTER);
-		return card;
-	}
-
-	private JLabel detailLine(String labelText, String value, boolean strong)
-	{
-		return detailHtmlLine(labelText, escapeHtml(value), strong);
-	}
-
 	private JLabel detailHtmlLine(String labelText, String htmlValue, boolean strong)
 	{
 		String color = strong ? "#ffffff" : "#d3d3d3";
@@ -320,11 +288,6 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		label.setFont(label.getFont().deriveFont(strong ? Font.BOLD : Font.PLAIN, 10f));
 		label.setBorder(BorderFactory.createEmptyBorder(1, 0, 1, 0));
 		return label;
-	}
-
-	private String formatSources(Set<TrackedMemberSource> sources)
-	{
-		return sources.stream().map(TrackedMemberSource::label).collect(Collectors.joining(", "));
 	}
 
 	private String activityIcon(TrackedMember member)

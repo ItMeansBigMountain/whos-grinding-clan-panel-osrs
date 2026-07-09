@@ -18,33 +18,58 @@ import java.util.stream.Collectors;
 final class WiseOldManGainedClient
 {
 	private static final String API_BASE_URL = "https://api.wiseoldman.net/v2/players/";
-	private static final int MAX_LINES = 5;
+	private static final int MAX_SKILL_LINES = 4;
+	private static final int MAX_BOSS_LINES = 3;
+	private static final int MAX_ACTIVITY_LINES = 3;
 
 	String fetchGrindingSummary(String playerName, GainsPeriod period) throws IOException
 	{
-		String url = API_BASE_URL
-			+ PlayerTrackingLinks.urlEncode(WhosGrindingClanPanelPlugin.normalizePlayerName(playerName))
-			+ "/gained?period=" + (period == null ? GainsPeriod.SEVEN_DAYS : period).wiseOldManPeriod();
+		String normalizedName = WhosGrindingClanPanelPlugin.normalizePlayerName(playerName);
+		GainsPeriod safePeriod = period == null ? GainsPeriod.SEVEN_DAYS : period;
+		HttpResult gainedResult = request("GET", gainedUrl(normalizedName, safePeriod));
+		if (gainedResult.responseCode != 200)
+		{
+			// If the player is not tracked yet, this starts/updates tracking on Wise Old Man, then retries gained.
+			HttpResult updateResult = request("POST", API_BASE_URL + PlayerTrackingLinks.urlEncode(normalizedName));
+			if (updateResult.responseCode != 200 && updateResult.responseCode != 201)
+			{
+				throw new IOException("Wise Old Man update returned HTTP " + updateResult.responseCode);
+			}
+			gainedResult = request("GET", gainedUrl(normalizedName, safePeriod));
+		}
+		if (gainedResult.responseCode != 200)
+		{
+			throw new IOException("Wise Old Man gained returned HTTP " + gainedResult.responseCode);
+		}
+		return summarizeGains(gainedResult.body);
+	}
+
+	private static String gainedUrl(String normalizedName, GainsPeriod period)
+	{
+		return API_BASE_URL + PlayerTrackingLinks.urlEncode(normalizedName) + "/gained?period=" + period.wiseOldManPeriod();
+	}
+
+	private static HttpResult request(String method, String url) throws IOException
+	{
 		HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+		connection.setRequestMethod(method);
 		connection.setConnectTimeout(3500);
 		connection.setReadTimeout(5000);
 		connection.setRequestProperty("User-Agent", "WhosGrindingPanel RuneLite plugin");
 		connection.setRequestProperty("Accept", "application/json");
-
 		int responseCode = connection.getResponseCode();
-		if (responseCode != 200)
-		{
-			throw new IOException("Wise Old Man returned HTTP " + responseCode);
-		}
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8)))
+		BufferedReader reader = new BufferedReader(new InputStreamReader(
+			responseCode >= 200 && responseCode < 400 ? connection.getInputStream() : connection.getErrorStream(),
+			StandardCharsets.UTF_8));
+		try (BufferedReader closeableReader = reader)
 		{
 			StringBuilder body = new StringBuilder();
 			String line;
-			while ((line = reader.readLine()) != null)
+			while ((line = closeableReader.readLine()) != null)
 			{
 				body.append(line);
 			}
-			return summarizeGains(body.toString());
+			return new HttpResult(responseCode, body.toString());
 		}
 	}
 
@@ -57,22 +82,36 @@ final class WiseOldManGainedClient
 			return "No Wise Old Man gained data for this period.";
 		}
 
-		List<GainedLine> lines = new ArrayList<>();
-		collectSection(lines, data.getAsJsonObject("skills"), "XP", "experience", "xp", true);
-		collectSection(lines, data.getAsJsonObject("bosses"), "KC", "kills", "kc", false);
-		collectSection(lines, data.getAsJsonObject("activities"), "Score", "score", "score", false);
+		List<GainedLine> skills = new ArrayList<>();
+		List<GainedLine> bosses = new ArrayList<>();
+		List<GainedLine> activities = new ArrayList<>();
+		collectSection(skills, data.getAsJsonObject("skills"), "XP", "experience", "xp", true);
+		collectSection(bosses, data.getAsJsonObject("bosses"), "KC", "kills", "kc", false);
+		collectSection(activities, data.getAsJsonObject("activities"), "Score", "score", "score", false);
 
-		List<GainedLine> positiveLines = lines.stream()
-			.filter(line -> line.gained > 0)
-			.sorted(Comparator.comparingLong((GainedLine line) -> line.gained).reversed())
-			.limit(MAX_LINES)
-			.collect(Collectors.toList());
+		List<String> sections = new ArrayList<>();
+		addSection(sections, "Skills", skills, MAX_SKILL_LINES);
+		addSection(sections, "Bosses", bosses, MAX_BOSS_LINES);
+		addSection(sections, "Activities", activities, MAX_ACTIVITY_LINES);
 
-		if (positiveLines.isEmpty())
+		if (sections.isEmpty())
 		{
 			return "No tracked XP/KC/score gains found for this period.";
 		}
-		return positiveLines.stream().map(GainedLine::format).collect(Collectors.joining("<br>"));
+		return String.join("<br>", sections);
+	}
+
+	private static void addSection(List<String> sections, String title, List<GainedLine> lines, int maxLines)
+	{
+		List<GainedLine> positiveLines = lines.stream()
+			.filter(line -> line.gained > 0)
+			.sorted(Comparator.comparingLong((GainedLine line) -> line.gained).reversed())
+			.limit(maxLines)
+			.collect(Collectors.toList());
+		if (!positiveLines.isEmpty())
+		{
+			sections.add("<b>" + title + "</b>: " + positiveLines.stream().map(GainedLine::format).collect(Collectors.joining("; ")));
+		}
 	}
 
 	private static void collectSection(List<GainedLine> lines, JsonObject section, String label, String valueObject, String suffix, boolean skipOverall)
@@ -129,6 +168,18 @@ final class WiseOldManGainedClient
 	private static String formatNumber(long value)
 	{
 		return String.format(Locale.US, "%,d", value);
+	}
+
+	private static final class HttpResult
+	{
+		private final int responseCode;
+		private final String body;
+
+		private HttpResult(int responseCode, String body)
+		{
+			this.responseCode = responseCode;
+			this.body = body;
+		}
 	}
 
 	private static final class GainedLine

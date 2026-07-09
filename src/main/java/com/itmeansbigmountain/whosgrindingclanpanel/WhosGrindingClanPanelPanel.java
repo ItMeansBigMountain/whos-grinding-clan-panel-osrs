@@ -218,7 +218,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		card.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		card.setBorder(BorderFactory.createCompoundBorder(
 			BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.DARK_GRAY_COLOR),
-			BorderFactory.createEmptyBorder(2, 2, 4, 2)
+			BorderFactory.createEmptyBorder(0, 0, 4, 0)
 		));
 		card.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, Short.MAX_VALUE));
 
@@ -283,10 +283,10 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	private JLabel detailHtmlLine(String labelText, String htmlValue, boolean strong)
 	{
 		String color = strong ? "#ffffff" : "#d3d3d3";
-		JLabel label = new JLabel("<html><body style='width:" + (PANEL_TEXT_WIDTH - 12) + "px'><span style='color:#d3972b'>"
+		JLabel label = new JLabel("<html><body style='width:" + PANEL_TEXT_WIDTH + "px'><span style='color:#d3972b'>"
 			+ escapeHtml(labelText) + ":</span> <span style='color:" + color + "'>" + htmlValue + "</span></body></html>");
-		label.setFont(label.getFont().deriveFont(strong ? Font.BOLD : Font.PLAIN, 10f));
-		label.setBorder(BorderFactory.createEmptyBorder(1, 0, 1, 0));
+		label.setFont(label.getFont().deriveFont(strong ? Font.BOLD : Font.PLAIN, 12f));
+		label.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 		return label;
 	}
 

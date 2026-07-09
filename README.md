@@ -20,6 +20,7 @@ A RuneLite external plugin for quickly seeing what friends, friends-chat players
   - Activities — each score/minigame gain on its own line
 - Gained values (`xp`, `kc`, `score`) are bolded; common OSRS slang labels are cleaned up, e.g. `chambers_of_xeric` -> `CoX`, `tombs_of_amascut` -> `ToA`, `theatre_of_blood` -> `ToB`, and `last_man_standing` -> `LMS`.
 - If WOM cannot find useful gains, the plugin attempts to start/update tracking for the player and shows a concise wrapped fallback suggesting a longer period or trying again after XP/KC changes.
+- If WOM still cannot provide useful gained data, the plugin falls back to official OSRS hiscores snapshots. Jagex hiscores only expose current XP, so the plugin saves local per-player snapshots and computes XP gained for the selected history period once enough scans exist.
 
 ## Configuration
 
@@ -44,6 +45,7 @@ src/main/java/com/itmeansbigmountain/whosgrindingclanpanel/
   WhosGrindingClanPanelConfig.java   # RuneLite config options
   WhosGrindingClanPanelPanel.java    # Compact sidebar UI with expandable player rows
   WiseOldManGainedClient.java        # WOM gained API client and summary formatting
+  OfficialHiscoresGainedClient.java  # Official hiscores snapshot fallback for XP gains
   SocialTrackingService.java         # tracked-member merge/cap/ignore service
 src/test/java/com/itmeansbigmountain/whosgrindingclanpanel/
   *Test.java                         # JUnit coverage for formatting, dimensions, configs, tracking, and WOM summaries
@@ -98,6 +100,8 @@ gradlew.bat run --no-daemon --console=plain
 ## API usage notes
 
 Wise Old Man calls are click-to-fetch and cached by player + period. The plugin does not poll every visible member every tick. If a selected player is not tracked or gained data is unavailable, it attempts to start/update WOM tracking with `POST /v2/players/{name}` and retries the gained endpoint.
+
+Official OSRS hiscores are used as a fallback for skill XP. Because the official endpoint has no historical gained API, the plugin stores local snapshots under the RuneLite user directory and compares the current snapshot against the best saved baseline for the selected period. First scan may show a baseline-saved message; later scans can show XP gained.
 
 Keep network calls and cache refreshes off the RuneLite game thread. Show user-visible loading/empty/failure states instead of blocking or silently failing.
 

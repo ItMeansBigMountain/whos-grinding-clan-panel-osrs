@@ -40,6 +40,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	private final WhosGrindingClanPanelConfig config;
 	private final PanelActions actions;
 	private final WiseOldManGainedClient gainedClient = new WiseOldManGainedClient();
+	private final OfficialHiscoresGainedClient hiscoresClient = new OfficialHiscoresGainedClient();
 	private final Map<String, String> grindingSummaryCache = new ConcurrentHashMap<>();
 	private SocialTrackerState state;
 	private SocialSourceFilter filter = SocialSourceFilter.FRIENDS_CHAT;
@@ -318,7 +319,12 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			@Override
 			protected String doInBackground() throws Exception
 			{
-				return gainedClient.fetchGrindingSummary(playerName, config.gainsPeriod());
+				String womSummary = gainedClient.fetchGrindingSummary(playerName, config.gainsPeriod());
+				if (womSummary.startsWith("No recent gains"))
+				{
+					return hiscoresClient.fetchGrindingSummary(playerName, config.gainsPeriod());
+				}
+				return womSummary;
 			}
 
 			@Override
@@ -330,11 +336,23 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 				}
 				catch (Exception ex)
 				{
-					grindingSummaryCache.put(cacheKey, "Could not load<br>WOM gains.<br>Tracking was<br>requested if<br>possible. Try<br>refresh or a<br>longer period.");
+					grindingSummaryCache.put(cacheKey, fallbackHiscoresSummary(playerName));
 				}
 				rebuild();
 			}
 		}.execute();
+	}
+
+	private String fallbackHiscoresSummary(String playerName)
+	{
+		try
+		{
+			return hiscoresClient.fetchGrindingSummary(playerName, config.gainsPeriod());
+		}
+		catch (Exception ignored)
+		{
+			return "Could not load<br>WOM or official<br>hiscores gains.<br>Try refresh or<br>a longer period.";
+		}
 	}
 
 	private String grindingSummaryFor(String playerName)

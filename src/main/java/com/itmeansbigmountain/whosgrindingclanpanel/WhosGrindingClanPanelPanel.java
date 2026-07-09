@@ -224,12 +224,12 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			BorderFactory.createEmptyBorder(0, 0, 4, 3)
 		));
 		ensureGrindingSummaryLoaded(member);
-		JLabel title = cardLine("<span style='color:#d3972b'><b>Grinding " + escapeHtml(config.gainsPeriod().label()) + "</b></span>", 12f);
+		JLabel title = cardLine("<span style='color:#d3972b'><b>Grinding " + escapeHtml(config.gainsPeriod().label()) + "</b></span>", 13f);
 		card.add(title);
 		int cardHeight = title.getPreferredSize().height;
 		for (String line : grindingSummaryFor(member).split("<br>"))
 		{
-			JLabel row = cardLine(line, 11f);
+			JLabel row = cardLine(line, 12f);
 			card.add(row);
 			cardHeight += row.getPreferredSize().height;
 		}

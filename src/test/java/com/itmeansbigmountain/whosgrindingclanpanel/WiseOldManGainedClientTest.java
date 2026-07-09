@@ -22,12 +22,12 @@ public class WiseOldManGainedClientTest
 
 		String summary = WiseOldManGainedClient.summarizeGains(json);
 
-		assertTrue(summary.contains("<b>Skills</b>:<br>▴ Ranged: +420,000 xp (XP)<br>▴ Slayer: +180,000 xp (XP)"));
-		assertTrue(summary.contains("Ranged: +420,000 xp (XP)"));
-		assertTrue(summary.contains("Slayer: +180,000 xp (XP)"));
-		assertTrue(summary.contains("Zulrah: +43 kc (KC)"));
-		assertTrue(summary.contains("<b>Bosses</b>:<br>⚔ Zulrah: +43 kc (KC)<br>⚔ Scurrius: +12 kc (KC)"));
-		assertTrue(summary.contains("<b>Activities</b>:<br>★ LMS: +34 score (Score)<br>★ Clue Scrolls Hard: +3 score (Score)<br>★ Bounty Hunter: +2 score (Score)"));
+		assertTrue(summary.contains("<b>Skills</b>:<br>▴ Ranged: <b>+420,000 xp</b> (XP)<br>▴ Slayer: <b>+180,000 xp</b> (XP)"));
+		assertTrue(summary.contains("Ranged: <b>+420,000 xp</b> (XP)"));
+		assertTrue(summary.contains("Slayer: <b>+180,000 xp</b> (XP)"));
+		assertTrue(summary.contains("Zulrah: <b>+43 kc</b> (KC)"));
+		assertTrue(summary.contains("<b>Bosses</b>:<br>⚔ Zulrah: <b>+43 kc</b> (KC)<br>⚔ Scurrius: <b>+12 kc</b> (KC)"));
+		assertTrue(summary.contains("<b>Activities</b>:<br>★ LMS: <b>+34 score</b> (Score)<br>★ Clue Scrolls Hard: <b>+3 score</b> (Score)<br>★ Bounty Hunter: <b>+2 score</b> (Score)"));
 	}
 
 	@Test
@@ -35,6 +35,6 @@ public class WiseOldManGainedClientTest
 	{
 		String json = "{\"data\":{\"skills\":{\"ranged\":{\"experience\":{\"gained\":0}}},\"bosses\":{},\"activities\":{}}}";
 
-		assertEquals("No recent gains found. WOM tracking was started/updated if needed. Try 30/365 days or check again after XP/KC changes.", WiseOldManGainedClient.summarizeGains(json));
+		assertEquals("No recent gains<br>found. WOM tracking<br>was started/updated if<br>needed. Try 30/365<br>days or check<br>again after XP/KC<br>changes.", WiseOldManGainedClient.summarizeGains(json));
 	}
 }

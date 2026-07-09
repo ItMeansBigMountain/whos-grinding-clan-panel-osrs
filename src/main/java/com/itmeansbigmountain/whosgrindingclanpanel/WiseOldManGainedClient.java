@@ -96,7 +96,7 @@ final class WiseOldManGainedClient
 
 		if (sections.isEmpty())
 		{
-			return "No recent gains found. WOM tracking was started/updated if needed. Try 30/365 days or check again after XP/KC changes.";
+			return "No recent gains<br>found. WOM tracking<br>was started/updated if<br>needed. Try 30/365<br>days or check<br>again after XP/KC<br>changes.";
 		}
 		return String.join("<br>", sections);
 	}
@@ -214,7 +214,7 @@ final class WiseOldManGainedClient
 
 		private String format()
 		{
-			return icon() + " " + metric + ": +" + formatNumber(gained) + " " + suffix + " (" + label + ")";
+			return icon() + " " + metric + ": <b>+" + formatNumber(gained) + " " + suffix + "</b> (" + label + ")";
 		}
 
 		private String icon()

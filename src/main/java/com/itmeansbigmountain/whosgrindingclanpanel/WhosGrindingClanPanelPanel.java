@@ -2,6 +2,7 @@ package com.itmeansbigmountain.whosgrindingclanpanel;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
@@ -115,6 +116,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		row.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		row.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, CONTROL_HEIGHT));
 		row.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH, CONTROL_HEIGHT));
+		row.setAlignmentX(Component.LEFT_ALIGNMENT);
 
 		JComboBox<SocialSourceFilter> sourceDropdown = new JComboBox<>(SocialSourceFilter.values());
 		sourceDropdown.setSelectedItem(filter);
@@ -177,6 +179,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		));
 		row.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, 28));
 		row.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH, 28));
+		row.setAlignmentX(Component.LEFT_ALIGNMENT);
 		row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
 		String world = member.lastWorld() > 0 ? " W" + member.lastWorld() : "";
@@ -221,11 +224,19 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			BorderFactory.createEmptyBorder(0, 0, 4, 0)
 		));
 		ensureGrindingSummaryLoaded(member);
-		JLabel grindingLabel = detailHtmlLine("Grinding " + config.gainsPeriod().label(), grindingSummaryFor(member), false);
-		card.add(grindingLabel);
-		int cardHeight = grindingLabel.getPreferredSize().height + 4;
+		JLabel title = cardLine("<span style='color:#d3972b'><b>Grinding " + escapeHtml(config.gainsPeriod().label()) + "</b></span>", 11f);
+		card.add(title);
+		int cardHeight = title.getPreferredSize().height;
+		for (String line : grindingSummaryFor(member).split("<br>"))
+		{
+			JLabel row = cardLine(line, 10f);
+			card.add(row);
+			cardHeight += row.getPreferredSize().height;
+		}
+		cardHeight += 4;
 		card.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH, cardHeight));
 		card.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, cardHeight));
+		card.setAlignmentX(Component.LEFT_ALIGNMENT);
 		return card;
 	}
 
@@ -282,13 +293,15 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		return TrackedMember.normalizeKey(member.displayName()) + ":" + config.gainsPeriod().wiseOldManPeriod();
 	}
 
-	private JLabel detailHtmlLine(String labelText, String htmlValue, boolean strong)
+	private JLabel cardLine(String html, float fontSize)
 	{
-		String color = strong ? "#ffffff" : "#d3d3d3";
-		JLabel label = new JLabel("<html><body style='width:" + PANEL_TEXT_WIDTH + "px'><span style='color:#d3972b'>"
-			+ escapeHtml(labelText) + ":</span> <span style='color:" + color + "'>" + htmlValue + "</span></body></html>");
-		label.setFont(label.getFont().deriveFont(strong ? Font.BOLD : Font.PLAIN, 12f));
+		JLabel label = new JLabel("<html><body style='width:" + PANEL_TEXT_WIDTH + "px; margin:0; padding:0'>"
+			+ html + "</body></html>");
+		label.setForeground(Color.LIGHT_GRAY);
+		label.setFont(label.getFont().deriveFont(Font.PLAIN, fontSize));
 		label.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+		label.setAlignmentX(Component.LEFT_ALIGNMENT);
+		label.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, label.getPreferredSize().height));
 		return label;
 	}
 

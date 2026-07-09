@@ -34,6 +34,6 @@ public class WiseOldManGainedClientTest
 	{
 		String json = "{\"data\":{\"skills\":{\"ranged\":{\"experience\":{\"gained\":0}}},\"bosses\":{},\"activities\":{}}}";
 
-		assertEquals("No tracked XP/KC/score gains found for this period.", WiseOldManGainedClient.summarizeGains(json));
+		assertEquals("No recent gains found. WOM tracking was started/updated if needed. Try 30/365 days or check again after XP/KC changes.", WiseOldManGainedClient.summarizeGains(json));
 	}
 }

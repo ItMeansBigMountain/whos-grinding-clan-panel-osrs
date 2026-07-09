@@ -96,7 +96,7 @@ final class WiseOldManGainedClient
 
 		if (sections.isEmpty())
 		{
-			return "No tracked XP/KC/score gains found for this period.";
+			return "No recent gains found. WOM tracking was started/updated if needed. Try 30/365 days or check again after XP/KC changes.";
 		}
 		return String.join("<br>", sections);
 	}

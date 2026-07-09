@@ -22,11 +22,12 @@ public class WiseOldManGainedClientTest
 
 		String summary = WiseOldManGainedClient.summarizeGains(json);
 
+		assertTrue(summary.contains("<b>Skills</b>:<br>▴ Ranged: +420,000 xp (XP)<br>▴ Slayer: +180,000 xp (XP)"));
 		assertTrue(summary.contains("Ranged: +420,000 xp (XP)"));
 		assertTrue(summary.contains("Slayer: +180,000 xp (XP)"));
 		assertTrue(summary.contains("Zulrah: +43 kc (KC)"));
-		assertTrue(summary.contains("<b>Bosses</b>:<br>Zulrah: +43 kc (KC)<br>Scurrius: +12 kc (KC)"));
-		assertTrue(summary.contains("<b>Activities</b>:<br>LMS: +34 score (Score)<br>Clue Scrolls Hard: +3 score (Score)<br>Bounty Hunter: +2 score (Score)"));
+		assertTrue(summary.contains("<b>Bosses</b>:<br>⚔ Zulrah: +43 kc (KC)<br>⚔ Scurrius: +12 kc (KC)"));
+		assertTrue(summary.contains("<b>Activities</b>:<br>★ LMS: +34 score (Score)<br>★ Clue Scrolls Hard: +3 score (Score)<br>★ Bounty Hunter: +2 score (Score)"));
 	}
 
 	@Test

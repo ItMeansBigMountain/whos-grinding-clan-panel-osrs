@@ -110,7 +110,7 @@ final class WiseOldManGainedClient
 			.collect(Collectors.toList());
 		if (!positiveLines.isEmpty())
 		{
-			boolean onePerLine = "Bosses".equals(title) || "Activities".equals(title);
+			boolean onePerLine = true;
 			String separator = onePerLine ? "<br>" : "; ";
 			String headingSeparator = onePerLine ? ":<br>" : ": ";
 			sections.add("<b>" + title + "</b>" + headingSeparator
@@ -214,7 +214,20 @@ final class WiseOldManGainedClient
 
 		private String format()
 		{
-			return metric + ": +" + formatNumber(gained) + " " + suffix + " (" + label + ")";
+			return icon() + " " + metric + ": +" + formatNumber(gained) + " " + suffix + " (" + label + ")";
+		}
+
+		private String icon()
+		{
+			if ("XP".equals(label))
+			{
+				return "▴";
+			}
+			if ("KC".equals(label))
+			{
+				return "⚔";
+			}
+			return "★";
 		}
 	}
 }

@@ -221,15 +221,15 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		card.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		card.setBorder(BorderFactory.createCompoundBorder(
 			BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.DARK_GRAY_COLOR),
-			BorderFactory.createEmptyBorder(0, 0, 4, 0)
+			BorderFactory.createEmptyBorder(0, 0, 4, 3)
 		));
 		ensureGrindingSummaryLoaded(member);
-		JLabel title = cardLine("<span style='color:#d3972b'><b>Grinding " + escapeHtml(config.gainsPeriod().label()) + "</b></span>", 11f);
+		JLabel title = cardLine("<span style='color:#d3972b'><b>Grinding " + escapeHtml(config.gainsPeriod().label()) + "</b></span>", 12f);
 		card.add(title);
 		int cardHeight = title.getPreferredSize().height;
 		for (String line : grindingSummaryFor(member).split("<br>"))
 		{
-			JLabel row = cardLine(line, 10f);
+			JLabel row = cardLine(line, 11f);
 			card.add(row);
 			cardHeight += row.getPreferredSize().height;
 		}

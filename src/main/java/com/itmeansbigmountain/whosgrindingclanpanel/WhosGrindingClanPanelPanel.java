@@ -220,10 +220,12 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.DARK_GRAY_COLOR),
 			BorderFactory.createEmptyBorder(0, 0, 4, 0)
 		));
-		card.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, Short.MAX_VALUE));
-
 		ensureGrindingSummaryLoaded(member);
-		card.add(detailHtmlLine("Grinding " + config.gainsPeriod().label(), grindingSummaryFor(member), false));
+		JLabel grindingLabel = detailHtmlLine("Grinding " + config.gainsPeriod().label(), grindingSummaryFor(member), false);
+		card.add(grindingLabel);
+		int cardHeight = grindingLabel.getPreferredSize().height + 4;
+		card.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH, cardHeight));
+		card.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, cardHeight));
 		return card;
 	}
 

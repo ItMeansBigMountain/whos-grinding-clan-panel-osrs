@@ -17,7 +17,7 @@ public class WiseOldManGainedClientTest
 			+ "\"slayer\":{\"experience\":{\"gained\":180000}}"
 			+ "},"
 			+ "\"bosses\":{\"zulrah\":{\"kills\":{\"gained\":43}},\"scurrius\":{\"kills\":{\"gained\":12}}},"
-			+ "\"activities\":{\"clue_scrolls_hard\":{\"score\":{\"gained\":3}}}"
+			+ "\"activities\":{\"clue_scrolls_hard\":{\"score\":{\"gained\":3}},\"last_man_standing\":{\"score\":{\"gained\":34}},\"bounty_hunter_hunter\":{\"score\":{\"gained\":2}}}"
 			+ "}}";
 
 		String summary = WiseOldManGainedClient.summarizeGains(json);
@@ -26,7 +26,7 @@ public class WiseOldManGainedClientTest
 		assertTrue(summary.contains("Slayer: +180,000 xp (XP)"));
 		assertTrue(summary.contains("Zulrah: +43 kc (KC)"));
 		assertTrue(summary.contains("<b>Bosses</b>:<br>Zulrah: +43 kc (KC)<br>Scurrius: +12 kc (KC)"));
-		assertTrue(summary.contains("Clue Scrolls Hard: +3 score (Score)"));
+		assertTrue(summary.contains("<b>Activities</b>:<br>LMS: +34 score (Score)<br>Clue Scrolls Hard: +3 score (Score)<br>Bounty Hunter: +2 score (Score)"));
 	}
 
 	@Test

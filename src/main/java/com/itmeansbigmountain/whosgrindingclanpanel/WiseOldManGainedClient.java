@@ -110,8 +110,9 @@ final class WiseOldManGainedClient
 			.collect(Collectors.toList());
 		if (!positiveLines.isEmpty())
 		{
-			String separator = "Bosses".equals(title) ? "<br>" : "; ";
-			String headingSeparator = "Bosses".equals(title) ? ":<br>" : ": ";
+			boolean onePerLine = "Bosses".equals(title) || "Activities".equals(title);
+			String separator = onePerLine ? "<br>" : "; ";
+			String headingSeparator = onePerLine ? ":<br>" : ": ";
 			sections.add("<b>" + title + "</b>" + headingSeparator
 				+ positiveLines.stream().map(GainedLine::format).collect(Collectors.joining(separator)));
 		}
@@ -151,6 +152,17 @@ final class WiseOldManGainedClient
 
 	private static String prettyMetric(String metric)
 	{
+		switch (metric)
+		{
+			case "last_man_standing":
+				return "LMS";
+			case "bounty_hunter_hunter":
+				return "Bounty Hunter";
+			case "bounty_hunter_rogue":
+				return "Bounty Hunter Rogue";
+			default:
+				break;
+		}
 		String[] words = metric.replace('_', ' ').split(" ");
 		StringBuilder label = new StringBuilder();
 		for (String word : words)

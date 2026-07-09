@@ -110,7 +110,10 @@ final class WiseOldManGainedClient
 			.collect(Collectors.toList());
 		if (!positiveLines.isEmpty())
 		{
-			sections.add("<b>" + title + "</b>: " + positiveLines.stream().map(GainedLine::format).collect(Collectors.joining("; ")));
+			String separator = "Bosses".equals(title) ? "<br>" : "; ";
+			String headingSeparator = "Bosses".equals(title) ? ":<br>" : ": ";
+			sections.add("<b>" + title + "</b>" + headingSeparator
+				+ positiveLines.stream().map(GainedLine::format).collect(Collectors.joining(separator)));
 		}
 	}
 

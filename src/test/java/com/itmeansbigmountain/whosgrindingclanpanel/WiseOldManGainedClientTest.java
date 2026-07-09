@@ -16,7 +16,7 @@ public class WiseOldManGainedClientTest
 			+ "\"ranged\":{\"experience\":{\"gained\":420000}},"
 			+ "\"slayer\":{\"experience\":{\"gained\":180000}}"
 			+ "},"
-			+ "\"bosses\":{\"zulrah\":{\"kills\":{\"gained\":43}}},"
+			+ "\"bosses\":{\"zulrah\":{\"kills\":{\"gained\":43}},\"scurrius\":{\"kills\":{\"gained\":12}}},"
 			+ "\"activities\":{\"clue_scrolls_hard\":{\"score\":{\"gained\":3}}}"
 			+ "}}";
 
@@ -25,6 +25,7 @@ public class WiseOldManGainedClientTest
 		assertTrue(summary.contains("Ranged: +420,000 xp (XP)"));
 		assertTrue(summary.contains("Slayer: +180,000 xp (XP)"));
 		assertTrue(summary.contains("Zulrah: +43 kc (KC)"));
+		assertTrue(summary.contains("<b>Bosses</b>:<br>Zulrah: +43 kc (KC)<br>Scurrius: +12 kc (KC)"));
 		assertTrue(summary.contains("Clue Scrolls Hard: +3 score (Score)"));
 	}
 

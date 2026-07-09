@@ -79,7 +79,7 @@ final class WiseOldManGainedClient
 		JsonObject data = root.getAsJsonObject("data");
 		if (data == null)
 		{
-			return "No Wise Old Man gained data for this period.";
+			return "No recent gains<br>found. WOM tracking<br>was started/updated if<br>needed. Try 30/365<br>days or check<br>again after XP/KC<br>changes.";
 		}
 
 		List<GainedLine> skills = new ArrayList<>();
@@ -154,12 +154,90 @@ final class WiseOldManGainedClient
 	{
 		switch (metric)
 		{
+			case "chambers_of_xeric":
+				return "CoX";
+			case "chambers_of_xeric_challenge_mode":
+				return "CM CoX";
+			case "theatre_of_blood":
+				return "ToB";
+			case "theatre_of_blood_hard_mode":
+				return "HMT";
+			case "tombs_of_amascut":
+				return "ToA";
+			case "tombs_of_amascut_expert":
+				return "ToA Expert";
+			case "corrupted_gauntlet":
+				return "CG";
+			case "general_graardor":
+				return "Bandos";
+			case "commander_zilyana":
+				return "Zily";
+			case "kril_tsutsaroth":
+				return "Zammy";
+			case "kreearra":
+				return "Arma";
+			case "dagannoth_rex":
+				return "Rex";
+			case "dagannoth_prime":
+				return "Prime";
+			case "dagannoth_supreme":
+				return "Supreme";
+			case "kalphite_queen":
+				return "KQ";
+			case "king_black_dragon":
+				return "KBD";
+			case "corporeal_beast":
+				return "Corp";
+			case "cerberus":
+				return "Cerb";
+			case "grotesque_guardians":
+				return "GG";
+			case "phosanis_nightmare":
+				return "PNM";
+			case "the_nightmare":
+				return "NM";
+			case "phantom_muspah":
+				return "Muspah";
+			case "thermonuclear_smoke_devil":
+				return "Thermy";
+			case "wintertodt":
+				return "WT";
+			case "tzkal_zuk":
+				return "Zuk";
+			case "tztok_jad":
+				return "Jad";
+			case "vardorvis":
+				return "Vard";
+			case "the_leviathan":
+				return "Levi";
+			case "the_whisperer":
+				return "Whisp";
+			case "venenatis":
+				return "Vene";
+			case "sarachnis":
+				return "Sarach";
+			case "zalcano":
+				return "Zalc";
 			case "last_man_standing":
 				return "LMS";
 			case "bounty_hunter_hunter":
 				return "Bounty Hunter";
 			case "bounty_hunter_rogue":
 				return "Bounty Hunter Rogue";
+			case "soul_wars":
+				return "SW";
+			case "pest_control":
+				return "PC";
+			case "barbarian_assault":
+				return "BA";
+			case "castle_wars":
+				return "CW";
+			case "guardians_of_the_rift":
+				return "GotR";
+			case "volcanic_mine":
+				return "VM";
+			case "collection_log":
+				return "Col Log";
 			default:
 				break;
 		}

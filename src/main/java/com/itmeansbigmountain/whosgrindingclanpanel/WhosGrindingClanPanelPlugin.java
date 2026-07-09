@@ -17,6 +17,7 @@ import net.runelite.api.FriendContainer;
 import net.runelite.api.FriendsChatManager;
 import net.runelite.api.FriendsChatMember;
 import net.runelite.api.GameState;
+import net.runelite.api.Player;
 import net.runelite.api.clan.ClanChannel;
 import net.runelite.api.clan.ClanChannelMember;
 import net.runelite.api.events.GameStateChanged;
@@ -166,12 +167,23 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 
 	private void rescanSocialSources(String reason)
 	{
+		updateCurrentPlayerName();
 		trackingService.rescan(
 			buildSocialSnapshots(),
 			config.maxTrackedMembers()
 		);
 		lastAutomaticRefresh = Instant.now();
 		log.debug("{} rescanned social sources: {}", PLUGIN_NAME, reason);
+	}
+
+	private void updateCurrentPlayerName()
+	{
+		if (trackingService == null)
+		{
+			return;
+		}
+		Player localPlayer = client.getLocalPlayer();
+		trackingService.setCurrentPlayerName(localPlayer == null ? null : localPlayer.getName());
 	}
 
 	private List<SocialSourceSnapshot> buildSocialSnapshots()

@@ -17,6 +17,7 @@ final class SocialTrackingService
 	private final Set<String> ignoredMemberKeys = new LinkedHashSet<>();
 	private Instant refreshedAt;
 	private List<String> messages = new ArrayList<>();
+	private String currentPlayerName;
 
 	SocialTrackingService()
 	{
@@ -49,6 +50,12 @@ final class SocialTrackingService
 	String serializeIgnoredMembers()
 	{
 		return String.join("\n", ignoredMemberKeys);
+	}
+
+	void setCurrentPlayerName(String rawName)
+	{
+		String normalized = WhosGrindingClanPanelPlugin.normalizePlayerName(rawName);
+		currentPlayerName = TrackedMember.normalizeKey(normalized).equals("unknown clanmate") ? null : normalized;
 	}
 
 	void rescan(List<SocialSourceSnapshot> snapshots, int maxTrackedMembers)
@@ -127,7 +134,7 @@ final class SocialTrackingService
 		copies.sort(Comparator
 			.comparing((TrackedMember member) -> member.status() == TrackedMemberStatus.ONLINE ? 0 : member.status() == TrackedMemberStatus.UNKNOWN ? 1 : 2)
 			.thenComparing(TrackedMember::displayName));
-		return new SocialTrackerState(copies, ignoredMemberKeys.size(), maxTrackedMembers, refreshedAt, messages);
+		return new SocialTrackerState(copies, ignoredMemberKeys.size(), maxTrackedMembers, refreshedAt, messages, currentPlayerName);
 	}
 
 	static List<SocialSourceSnapshot> seedSnapshots(boolean trackFriends, boolean trackClan, boolean trackFriendsChat)

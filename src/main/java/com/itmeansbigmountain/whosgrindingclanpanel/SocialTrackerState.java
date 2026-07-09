@@ -12,14 +12,16 @@ final class SocialTrackerState
 	private final int maxTrackedMembers;
 	private final Instant refreshedAt;
 	private final List<String> messages;
+	private final String currentPlayerName;
 
-	SocialTrackerState(List<TrackedMember> members, int ignoredCount, int maxTrackedMembers, Instant refreshedAt, List<String> messages)
+	SocialTrackerState(List<TrackedMember> members, int ignoredCount, int maxTrackedMembers, Instant refreshedAt, List<String> messages, String currentPlayerName)
 	{
 		this.members = Collections.unmodifiableList(new ArrayList<>(members));
 		this.ignoredCount = ignoredCount;
 		this.maxTrackedMembers = maxTrackedMembers;
 		this.refreshedAt = refreshedAt;
 		this.messages = Collections.unmodifiableList(new ArrayList<>(messages));
+		this.currentPlayerName = currentPlayerName;
 	}
 
 	List<TrackedMember> members()
@@ -45,6 +47,11 @@ final class SocialTrackerState
 	List<String> messages()
 	{
 		return messages;
+	}
+
+	String currentPlayerName()
+	{
+		return currentPlayerName;
 	}
 
 	List<TrackedMember> filteredMembers(SocialSourceFilter filter)

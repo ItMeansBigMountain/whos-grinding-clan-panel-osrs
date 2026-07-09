@@ -20,6 +20,7 @@ The current product slice is no longer just a scaffold. It includes:
 - Config toggles for those sources.
 - Compact source-filtered sidebar rows.
 - Inline expandable/collapsible player cards.
+- A current-player row pinned at the top across all source tabs, so the logged-in user can inspect their own public WOM grinding view.
 - Wise Old Man click-to-fetch gained summaries for the selected gains period.
 - WOM start/update fallback for untracked players.
 - Grinding-only card details: skills XP, boss KC, and activity/minigame scores.
@@ -51,6 +52,9 @@ The current product slice is no longer just a scaffold. It includes:
   - each boss KC gain
   - each activity/minigame score gain
 - Use friendly labels for common WOM keys:
+  - `chambers_of_xeric` -> `CoX`
+  - `tombs_of_amascut` -> `ToA`
+  - `theatre_of_blood` -> `ToB`
   - `last_man_standing` -> `LMS`
   - `bounty_hunter_hunter` -> `Bounty Hunter`
   - `bounty_hunter_rogue` -> `Bounty Hunter Rogue`

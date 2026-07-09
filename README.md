@@ -12,12 +12,13 @@ A RuneLite external plugin for quickly seeing what friends, friends-chat players
   - Clan chat / clan channel
 - Displays players behind a compact source dropdown: `Friends Chat`, `Friends List`, `Clan Chat`, and aggregate filters.
 - Keeps rows dense and aligned to the approved sidebar width: no trailing controls, no wide cards, and only a tiny right pad.
+- Shows the current logged-in player at the top of the panel on every source tab so the user can see what others can see for their own account.
 - Click a player row to expand/collapse a grinding-only card directly under that row.
 - The expanded card fetches Wise Old Man gained data in the background for the configured period and groups results as:
   - Skills — each XP gain on its own line
   - Bosses — each KC gain on its own line
   - Activities — each score/minigame gain on its own line
-- Gained values (`xp`, `kc`, `score`) are bolded; common activity labels are cleaned up, e.g. `last_man_standing` -> `LMS`.
+- Gained values (`xp`, `kc`, `score`) are bolded; common OSRS slang labels are cleaned up, e.g. `chambers_of_xeric` -> `CoX`, `tombs_of_amascut` -> `ToA`, `theatre_of_blood` -> `ToB`, and `last_man_standing` -> `LMS`.
 - If WOM cannot find useful gains, the plugin attempts to start/update tracking for the player and shows a concise wrapped fallback suggesting a longer period or trying again after XP/KC changes.
 
 ## Configuration
@@ -88,10 +89,11 @@ gradlew.bat run --no-daemon --console=plain
 4. Confirm Friends List, Friends Chat, and Clan Chat filters show appropriate members or clear empty/unsupported messages.
 5. Confirm the `↻` button is visible at default sidebar width.
 6. Click a player row and confirm the inline card expands; click again and confirm it collapses.
-7. For a known player such as `oyama`, confirm WOM data shows skills, boss KC, and activities line-by-line with bold gained values.
-8. Confirm card width matches the approved top dropdown/title width, has a tiny right pad, and has no blank vertical filler.
-9. Toggle `Enable WOM lookups` off and confirm the card explains lookups are disabled.
-10. Switch gains period to day/7 days/30 days/365 days and confirm the card refreshes using the selected window.
+7. Confirm the logged-in player appears at the top on every source tab and can be expanded to show the user's own WOM details.
+8. For a known player such as `oyama`, confirm WOM data shows skills, boss KC, and activities line-by-line with bold gained values and common acronyms (`CoX`, `ToA`, `ToB`, `LMS`, etc.) where applicable.
+9. Confirm card width matches the approved top dropdown/title width, has a tiny right pad, and has no blank vertical filler.
+10. Toggle `Enable WOM lookups` off and confirm the card explains lookups are disabled.
+11. Switch gains period to day/7 days/30 days/365 days and confirm the card refreshes using the selected window.
 
 ## API usage notes
 

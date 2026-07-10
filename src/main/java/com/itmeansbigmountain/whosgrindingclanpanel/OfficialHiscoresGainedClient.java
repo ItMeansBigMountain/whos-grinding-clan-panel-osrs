@@ -44,30 +44,17 @@ final class OfficialHiscoresGainedClient
 	String fetchGrindingSummary(String playerName, GainsPeriod period) throws IOException
 	{
 		String normalizedName = WhosGrindingClanPanelPlugin.normalizePlayerName(playerName);
-		GainsPeriod safePeriod = period == null ? GainsPeriod.SEVEN_DAYS : period;
 		HiscoreValues currentValues = fetchCurrentValues(normalizedName);
 		HiscoreSnapshot current = new HiscoreSnapshot(Instant.now().getEpochSecond(), currentValues);
 		Path snapshotFile = snapshotFile(normalizedName);
 		List<HiscoreSnapshot> snapshots = readSnapshots(snapshotFile);
-		long targetTimestamp = current.timestamp - safePeriod.days() * 86400L;
-		HiscoreSnapshot baseline = findBaseline(snapshots, targetTimestamp);
-		boolean partialPeriod = false;
-		if (baseline == null)
-		{
-			baseline = oldestSnapshot(snapshots);
-			partialPeriod = baseline != null;
-		}
+		HiscoreSnapshot baseline = latestSnapshot(snapshots);
 		writeSnapshots(snapshotFile, snapshots, current);
 		if (baseline == null)
 		{
-			return "Tracking baseline<br>saved. Gains show<br>automatically after<br>this period has<br>elapsed.";
+			return "Fallback baseline<br>saved from official<br>OSRS hiscores.<br>Future fallback gains<br>show the difference<br>from this scan.";
 		}
-		String summary = summarizeDelta(current.values, baseline.values);
-		if (partialPeriod)
-		{
-			return "Partial since<br>first local snapshot:<br>" + summary;
-		}
-		return summary;
+		return "Difference since<br>last plugin scan:<br>" + summarizeDelta(current.values, baseline.values);
 	}
 
 	static String summarizeDelta(HiscoreValues current, HiscoreValues baseline)
@@ -78,7 +65,7 @@ final class OfficialHiscoresGainedClient
 		addSection(sections, "Activities", gainedLines(current.activities, baseline.activities, "Score", "score", "★"));
 		if (sections.isEmpty())
 		{
-			return "No official<br>hiscores gains<br>found for this<br>saved period.<br>Try again after<br>more changes.";
+			return "No official<br>hiscores difference<br>found since the<br>last plugin scan.<br>Scan again after<br>new hiscores changes.";
 		}
 		return String.join("<br>", sections);
 	}
@@ -188,26 +175,9 @@ final class OfficialHiscoresGainedClient
 		return snapshots;
 	}
 
-	private static HiscoreSnapshot findBaseline(List<HiscoreSnapshot> snapshots, long targetTimestamp)
+	private static HiscoreSnapshot latestSnapshot(List<HiscoreSnapshot> snapshots)
 	{
-		HiscoreSnapshot best = null;
-		for (HiscoreSnapshot snapshot : snapshots)
-		{
-			if (snapshot.timestamp <= targetTimestamp && (best == null || snapshot.timestamp > best.timestamp))
-			{
-				best = snapshot;
-			}
-		}
-		if (best != null)
-		{
-			return best;
-		}
-		return null;
-	}
-
-	private static HiscoreSnapshot oldestSnapshot(List<HiscoreSnapshot> snapshots)
-	{
-		return snapshots.stream().min(Comparator.comparingLong(snapshot -> snapshot.timestamp)).orElse(null);
+		return snapshots.stream().max(Comparator.comparingLong(snapshot -> snapshot.timestamp)).orElse(null);
 	}
 
 	private static void writeSnapshots(Path path, List<HiscoreSnapshot> snapshots, HiscoreSnapshot current) throws IOException

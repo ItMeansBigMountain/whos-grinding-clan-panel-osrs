@@ -394,7 +394,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 				}
 				catch (Exception ex)
 				{
-					grindingSummaryCache.put(cacheKey, dataSection("Official OSRS hiscores delta", "Local snapshots from Jagex hiscores", fetchOfficialSummary(playerName)));
+					grindingSummaryCache.put(cacheKey, dataSection("Fallback: Official OSRS hiscores", fallbackSourceNote(), fetchOfficialSummary(playerName)));
 				}
 				rebuild();
 			}
@@ -405,17 +405,27 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	{
 		if (config.gainDataSource() == GainDataSource.OFFICIAL_HISCORES)
 		{
-			return dataSection("Official OSRS hiscores delta", "Local snapshots from Jagex hiscores", fetchOfficialSummary(playerName));
+			return dataSection("Fallback: Official OSRS hiscores", fallbackSourceNote(), fetchOfficialSummary(playerName));
 		}
 		if (config.gainDataSource() == GainDataSource.BOTH_FOR_DEVELOPMENT)
 		{
 			String womSummary = fetchWomSummary(playerName);
 			String officialSummary = fetchOfficialSummary(playerName);
-			return dataSection("Tracker API: Wise Old Man", "WOM gained endpoint", womSummary)
-				+ "<br><br>"
-				+ dataSection("Official OSRS hiscores delta", "Local snapshots from Jagex hiscores", officialSummary);
+			return dataSection("Tracker API: Wise Old Man", "Weekly/monthly/yearly tracker period", womSummary)
+				+ separator()
+				+ dataSection("Fallback: Official OSRS hiscores", fallbackSourceNote(), officialSummary);
 		}
-		return dataSection("Tracker API: Wise Old Man", "WOM gained endpoint", fetchWomSummary(playerName));
+		return dataSection("Tracker API: Wise Old Man", "Weekly/monthly/yearly tracker period", fetchWomSummary(playerName));
+	}
+
+	private String fallbackSourceNote()
+	{
+		return "Difference between current scan and last plugin scan. Tracker periods come from WOM. Other fallback APIs checked/planned: TempleOSRS, Crystal Math Labs, official OSRS hiscores.";
+	}
+
+	private String separator()
+	{
+		return "<br><span style='color:#5f5f5f'>────────────────────</span><br>";
 	}
 
 	private String dataSection(String title, String source, String summary)

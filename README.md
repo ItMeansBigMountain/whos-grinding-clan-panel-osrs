@@ -14,13 +14,16 @@ A RuneLite external plugin for quickly seeing what friends, friends-chat players
 - Keeps rows dense and aligned to the approved sidebar width: no trailing controls, no wide cards, and only a tiny right pad.
 - Shows the current logged-in player at the top of the panel on every source tab so the user can see what others can see for their own account.
 - Click a player row to expand/collapse a grinding-only card directly under that row.
-- The expanded card fetches Wise Old Man gained data in the background for the configured period and groups results as:
+- The expanded card fetches Wise Old Man gained data and official OSRS hiscores tracked deltas in the background for the configured period. It displays them as separate sections:
+  - WOM gains
+  - Official Hiscores tracked
+- Each source groups results as:
   - Skills — each XP gain on its own line
   - Bosses — each KC gain on its own line
   - Activities — each score/minigame gain on its own line
 - Gained values (`xp`, `kc`, `score`) are bolded; common OSRS slang labels are cleaned up, e.g. `chambers_of_xeric` -> `CoX`, `tombs_of_amascut` -> `ToA`, `theatre_of_blood` -> `ToB`, and `last_man_standing` -> `LMS`.
-- If WOM cannot find useful gains, the plugin attempts to start/update tracking for the player and shows a concise wrapped fallback suggesting a longer period or trying again after XP/KC changes.
-- If WOM still cannot provide useful gained data, the plugin falls back to official OSRS hiscores snapshots. Jagex hiscores only expose current XP, so the plugin saves local per-player snapshots and computes XP gained for the selected history period once enough scans exist.
+- If WOM cannot find useful gains, the plugin attempts to start/update tracking for the player, but still continues with official OSRS hiscores tracking automatically.
+- Official OSRS hiscores only expose current totals, so the plugin saves local per-player snapshots and computes XP/KC/score gained for the selected history period once enough scans exist. If the selected-period baseline is not old enough yet, best-available gains are labeled as partial.
 
 ## Configuration
 
@@ -99,9 +102,9 @@ gradlew.bat run --no-daemon --console=plain
 
 ## API usage notes
 
-Wise Old Man calls are click-to-fetch and cached by player + period. The plugin does not poll every visible member every tick. If a selected player is not tracked or gained data is unavailable, it attempts to start/update WOM tracking with `POST /v2/players/{name}` and retries the gained endpoint.
+Wise Old Man and official hiscores calls are click-to-fetch and cached by player + period. The plugin does not poll every visible member every tick. If a selected player is not tracked or gained data is unavailable, it attempts to start/update WOM tracking with `POST /v2/players/{name}` and retries the gained endpoint.
 
-If WOM still cannot produce useful positive gains, the plugin falls back to official OSRS hiscores. Official hiscores only expose current totals, so the plugin saves a local snapshot under the player's RuneLite home directory and compares future snapshots for the configured period. This fallback can show skill XP, boss KC, and activity/minigame score deltas after a baseline exists. If there is no previous snapshot yet, the card says the official hiscores baseline was saved and gains will show on a later scan.
+Official hiscores are always tracked for inspected players that Jagex hiscores can find. The plugin saves a local snapshot under the player's RuneLite home directory and compares future snapshots for the configured period. This can show skill XP, boss KC, and activity/minigame score deltas after a baseline exists. If there is no previous snapshot yet, the card says the baseline was saved and gains will show automatically later.
 
 Keep network calls and cache refreshes off the RuneLite game thread. Show user-visible loading/empty/failure states instead of blocking or silently failing.
 

@@ -10,7 +10,7 @@ The plugin tracks members from three configurable sources:
 2. **Friends chat** — people currently present in a friends chat channel.
 3. **Clan chat / clan channel** — members from the logged-in player's clan context.
 
-Once a person is discovered from an enabled source, the plugin keeps a compact local tracking record and can enrich that player on click with Wise Old Man gained data.
+Once a person is discovered from an enabled source, the plugin keeps a compact local tracking record and can enrich that player on click with Wise Old Man gained data plus official OSRS hiscores local-snapshot deltas.
 
 ## Current shipped direction
 
@@ -22,7 +22,7 @@ The current product slice is no longer just a scaffold. It includes:
 - Inline expandable/collapsible player cards.
 - A current-player row pinned at the top across all source tabs, so the logged-in user can inspect their own public WOM grinding view.
 - Wise Old Man click-to-fetch gained summaries for the selected gains period.
-- Official OSRS hiscores local-snapshot fallback for skills, boss KC, and activity score deltas when WOM has no useful data.
+- Official OSRS hiscores local-snapshot tracking shown as its own section for skills, boss KC, and activity score deltas.
 - WOM start/update fallback for untracked players.
 - Grinding-only card details: skills XP, boss KC, and activity/minigame scores.
 - One stat per line in the expanded card.
@@ -35,8 +35,8 @@ The current product slice is no longer just a scaffold. It includes:
 2. Plugin scans enabled social sources: friends list, friends chat, and/or clan chat.
 3. Plugin shows discovered members in a compact sidebar list.
 4. Player clicks a row.
-5. The row expands inline and loads recent WOM gained data for the configured period.
-6. Player sees what that person has been grinding: skills, bosses, and activities/minigames.
+5. The row expands inline and loads recent WOM gained data plus official hiscores tracked deltas for the configured period.
+6. Player sees what that person has been grinding: skills, bosses, and activities/minigames, separated by data source.
 7. Player clicks the row again to collapse it.
 
 ## UI standards
@@ -67,7 +67,7 @@ The current product slice is no longer just a scaffold. It includes:
 - Cache by player + gains period.
 - Keep network calls off the RuneLite game thread.
 - Expose config disclosure: selected player names are sent to Wise Old Man when WOM lookups are enabled.
-- If WOM cannot find gains, start/update tracking via `POST /v2/players/{name}`, retry, then fall back to official OSRS hiscores local snapshots. Official hiscores only expose current totals, so first use may only save a baseline; later checks can show skill XP, boss KC, and activity/minigame score deltas for the selected period.
+- If WOM cannot find gains, start/update tracking via `POST /v2/players/{name}` and retry. Always track official OSRS hiscores for inspected players as a separate source. Official hiscores only expose current totals, so first use may only save a baseline; later checks can show skill XP, boss KC, and activity/minigame score deltas for the selected period. If the baseline is too recent for the selected period, show best-available gains clearly labeled as partial.
 
 ## Remaining polish before Plugin Hub submission
 

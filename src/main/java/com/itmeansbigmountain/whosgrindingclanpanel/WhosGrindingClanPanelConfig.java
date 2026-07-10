@@ -137,7 +137,7 @@ public interface WhosGrindingClanPanelConfig extends Config
 		keyName = "ignoredMembers",
 		name = "Ignored members",
 		description = "Newline-separated normalized names removed from tracking",
-		position = 12,
+		position = 13,
 		hidden = true
 	)
 	default String ignoredMembers()

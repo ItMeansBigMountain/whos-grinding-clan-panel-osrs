@@ -319,12 +319,9 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			@Override
 			protected String doInBackground() throws Exception
 			{
-				String womSummary = gainedClient.fetchGrindingSummary(playerName, config.gainsPeriod());
-				if (womSummary.startsWith("No recent gains") || womSummary.startsWith("Player not on"))
-				{
-					return hiscoresClient.fetchGrindingSummary(playerName, config.gainsPeriod());
-				}
-				return womSummary;
+				String womSummary = fetchWomSummary(playerName);
+				String officialSummary = fetchOfficialSummary(playerName);
+				return "<b>WOM gains</b>:<br>" + womSummary + "<br><b>Official Hiscores tracked</b>:<br>" + officialSummary;
 			}
 
 			@Override
@@ -336,14 +333,26 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 				}
 				catch (Exception ex)
 				{
-					grindingSummaryCache.put(cacheKey, fallbackHiscoresSummary(playerName));
+					grindingSummaryCache.put(cacheKey, "<b>WOM gains</b>:<br>WOM gains are<br>not ready yet.<br><b>Official Hiscores tracked</b>:<br>" + fetchOfficialSummary(playerName));
 				}
 				rebuild();
 			}
 		}.execute();
 	}
 
-	private String fallbackHiscoresSummary(String playerName)
+	private String fetchWomSummary(String playerName)
+	{
+		try
+		{
+			return gainedClient.fetchGrindingSummary(playerName, config.gainsPeriod());
+		}
+		catch (Exception ignored)
+		{
+			return "WOM gains are<br>not ready yet.";
+		}
+	}
+
+	private String fetchOfficialSummary(String playerName)
 	{
 		try
 		{
@@ -351,7 +360,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		}
 		catch (Exception ignored)
 		{
-			return "Tracking data is<br>not ready yet.<br>We saved what we<br>can and will show<br>gains after more<br>updates.";
+			return "Official hiscores<br>not available yet.";
 		}
 	}
 

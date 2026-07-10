@@ -22,7 +22,7 @@ The current product slice is no longer just a scaffold. It includes:
 - Inline expandable/collapsible player cards.
 - A current-player row pinned at the top across all source tabs, so the logged-in user can inspect their own public WOM grinding view.
 - Wise Old Man click-to-fetch gained summaries for the selected gains period.
-- Official OSRS hiscores local-snapshot tracking shown as its own section for skills, boss KC, and activity score deltas.
+- Configurable gained-data source: tracker APIs, official OSRS hiscores local-snapshot deltas, or both side-by-side for development comparison.
 - WOM start/update fallback for untracked players.
 - Grinding-only card details: skills XP, boss KC, and activity/minigame scores.
 - One stat per line in the expanded card.
@@ -35,8 +35,8 @@ The current product slice is no longer just a scaffold. It includes:
 2. Plugin scans enabled social sources: friends list, friends chat, and/or clan chat.
 3. Plugin shows discovered members in a compact sidebar list.
 4. Player clicks a row.
-5. The row expands inline and loads recent WOM gained data plus official hiscores tracked deltas for the configured period.
-6. Player sees what that person has been grinding: skills, bosses, and activities/minigames, separated by data source.
+5. The row expands inline and loads gained data from the configured source for the configured period.
+6. Player sees what that person has been grinding: skills, bosses, and activities/minigames. Development comparison mode separates WOM and official-hiscores sections.
 7. Player clicks the row again to collapse it.
 
 ## UI standards

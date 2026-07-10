@@ -123,10 +123,21 @@ public interface WhosGrindingClanPanelConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "gainDataSource",
+		name = "Gain data source",
+		description = "Choose tracker API gains, official hiscores local deltas, or both side-by-side for development comparison",
+		position = 12
+	)
+	default GainDataSource gainDataSource()
+	{
+		return GainDataSource.TRACKER_APIS;
+	}
+
+	@ConfigItem(
 		keyName = "enableWiseOldManLookups",
 		name = "Enable WOM lookups",
-		description = "Loads selected-player gained summaries from Wise Old Man, falling back to official OSRS hiscores snapshots. This sends the selected player name to wiseoldman.net and secure.runescape.com.",
-		position = 12
+		description = "Loads selected-player gained summaries from Wise Old Man. This sends the selected player name to wiseoldman.net.",
+		position = 13
 	)
 	default boolean enableWiseOldManLookups()
 	{
@@ -137,7 +148,7 @@ public interface WhosGrindingClanPanelConfig extends Config
 		keyName = "ignoredMembers",
 		name = "Ignored members",
 		description = "Newline-separated normalized names removed from tracking",
-		position = 13,
+		position = 14,
 		hidden = true
 	)
 	default String ignoredMembers()

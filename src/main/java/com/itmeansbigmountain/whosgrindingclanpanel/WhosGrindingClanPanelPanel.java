@@ -190,7 +190,10 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		refreshButton.setFocusable(false);
 		refreshButton.setMaximumSize(new Dimension(26, CONTROL_HEIGHT));
 		refreshButton.setPreferredSize(new Dimension(26, CONTROL_HEIGHT));
-		refreshButton.addActionListener(event -> actions.refreshRequested());
+		refreshButton.addActionListener(event -> {
+			grindingSummaryCache.clear();
+			actions.refreshRequested();
+		});
 		row.add(refreshButton, BorderLayout.EAST);
 		return row;
 	}
@@ -304,7 +307,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	private void ensureGrindingSummaryLoaded(String playerName)
 	{
 		String cacheKey = grindingCacheKey(playerName);
-		if (!config.enableWiseOldManLookups())
+		if (!config.enableWiseOldManLookups() && config.gainDataSource() != GainDataSource.OFFICIAL_HISCORES)
 		{
 			grindingSummaryCache.put(cacheKey, "WOM lookups<br>are disabled<br>in config.");
 			return;
@@ -313,15 +316,13 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		{
 			return;
 		}
-		grindingSummaryCache.put(cacheKey, "Loading WOM<br>gains for " + config.gainsPeriod().label() + "...");
+		grindingSummaryCache.put(cacheKey, "Loading " + config.gainDataSource().toString() + "<br>for " + config.gainsPeriod().label() + "...");
 		new SwingWorker<String, Void>()
 		{
 			@Override
 			protected String doInBackground() throws Exception
 			{
-				String womSummary = fetchWomSummary(playerName);
-				String officialSummary = fetchOfficialSummary(playerName);
-				return "<b>WOM gains</b>:<br>" + womSummary + "<br><b>Official Hiscores tracked</b>:<br>" + officialSummary;
+				return fetchConfiguredSummary(playerName);
 			}
 
 			@Override
@@ -333,11 +334,26 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 				}
 				catch (Exception ex)
 				{
-					grindingSummaryCache.put(cacheKey, "<b>WOM gains</b>:<br>WOM gains are<br>not ready yet.<br><b>Official Hiscores tracked</b>:<br>" + fetchOfficialSummary(playerName));
+					grindingSummaryCache.put(cacheKey, fetchOfficialSummary(playerName));
 				}
 				rebuild();
 			}
 		}.execute();
+	}
+
+	private String fetchConfiguredSummary(String playerName)
+	{
+		if (config.gainDataSource() == GainDataSource.OFFICIAL_HISCORES)
+		{
+			return fetchOfficialSummary(playerName);
+		}
+		if (config.gainDataSource() == GainDataSource.BOTH_FOR_DEVELOPMENT)
+		{
+			String womSummary = fetchWomSummary(playerName);
+			String officialSummary = fetchOfficialSummary(playerName);
+			return "<b>WOM gains</b>:<br>" + womSummary + "<br><b>Official Hiscores tracked</b>:<br>" + officialSummary;
+		}
+		return fetchWomSummary(playerName);
 	}
 
 	private String fetchWomSummary(String playerName)
@@ -366,12 +382,12 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 	private String grindingSummaryFor(String playerName)
 	{
-		return grindingSummaryCache.getOrDefault(grindingCacheKey(playerName), "Loading WOM<br>gains for " + config.gainsPeriod().label() + "...");
+		return grindingSummaryCache.getOrDefault(grindingCacheKey(playerName), "Loading " + config.gainDataSource().toString() + "<br>for " + config.gainsPeriod().label() + "...");
 	}
 
 	private String grindingCacheKey(String playerName)
 	{
-		return TrackedMember.normalizeKey(playerName) + ":" + config.gainsPeriod().wiseOldManPeriod();
+		return TrackedMember.normalizeKey(playerName) + ":" + config.gainsPeriod().wiseOldManPeriod() + ":" + config.gainDataSource().name();
 	}
 
 	private JLabel cardLine(String html, float fontSize)

@@ -14,7 +14,7 @@ A RuneLite external plugin for quickly seeing what friends, friends-chat players
 - Keeps rows dense and aligned to the approved sidebar width: no trailing controls, no wide cards, and only a tiny right pad.
 - Shows the current logged-in player at the top of the panel on every source tab so the user can see what others can see for their own account.
 - Click a player row to expand/collapse a grinding-only card directly under that row.
-- The expanded card fetches Wise Old Man gained data and official OSRS hiscores tracked deltas in the background for the configured period. It displays them as separate sections:
+- The expanded card fetches gained data in the background for the configured period. The `Gain data source` config can show tracker APIs only, official OSRS hiscores deltas only, or both side-by-side for development comparison. In comparison mode it displays:
   - WOM gains
   - Official Hiscores tracked
 - Each source groups results as:
@@ -37,6 +37,7 @@ A RuneLite external plugin for quickly seeing what friends, friends-chat players
 - `Max tracked members` caps the local tracking list for memory/API control.
 - `Refresh interval (minutes)` controls automatic rescans while logged in and defaults to 60 minutes.
 - `Gains period` controls the WOM gained window: day, 7 days, 30 days, or 365 days.
+- `Gain data source` chooses `Tracker APIs (WOM)`, `Official Hiscores delta`, or `Both (development)`.
 - `Enable WOM lookups` controls whether selected-player names are sent to Wise Old Man for gained summaries.
 - Hidden `ignoredMembers` persistence remains for compatibility with older versions.
 

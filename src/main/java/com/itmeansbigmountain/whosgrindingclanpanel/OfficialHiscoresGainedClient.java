@@ -24,22 +24,21 @@ final class OfficialHiscoresGainedClient
 	private static final String[] SKILLS = {
 		"Overall", "Attack", "Defence", "Strength", "Hitpoints", "Ranged", "Prayer", "Magic", "Cooking", "Woodcutting",
 		"Fletching", "Fishing", "Firemaking", "Crafting", "Smithing", "Mining", "Herblore", "Agility", "Thieving", "Slayer",
-		"Farming", "Runecrafting", "Hunter", "Construction"
+		"Farming", "Runecrafting", "Hunter", "Construction", "Sailing"
 	};
 	private static final String[] ACTIVITIES = {
-		"League Points", "Deadman Points", "Bounty Hunter", "Bounty Hunter Rogue", "BH Legacy Hunter", "BH Legacy Rogue",
-		"Clue Scrolls All", "Clue Scrolls Beginner", "Clue Scrolls Easy", "Clue Scrolls Medium", "Clue Scrolls Hard",
-		"Clue Scrolls Elite", "Clue Scrolls Master", "LMS", "PvP Arena", "Soul Wars", "Rifts Closed", "Colosseum Glory",
-		"Collections Logged"
+		"League Points", "Bounty Hunter", "Bounty Hunter Rogue", "Clue Scrolls All", "Clue Scrolls Beginner", "Clue Scrolls Easy",
+		"Clue Scrolls Medium", "Clue Scrolls Hard", "Clue Scrolls Elite", "Clue Scrolls Master", "LMS", "PvP Arena",
+		"Soul Wars", "Rifts Closed", "Colosseum Glory", "Collections Logged"
 	};
 	private static final String[] BOSSES = {
-		"Abyssal Sire", "Alchemical Hydra", "Amoxliatl", "Araxxor", "Artio", "Barrows Chests", "Bryophyta", "Callisto",
+		"Abyssal Sire", "Alchemical Hydra", "Amoxliatl", "Araxxor", "Artio", "Barrows Chests", "Brutus", "Bryophyta", "Callisto",
 		"Calvar'ion", "Cerb", "CoX", "CM CoX", "Chaos Elemental", "Chaos Fanatic", "Zily", "Corp", "Crazy Archaeologist",
 		"Prime", "Rex", "Supreme", "Deranged Archaeologist", "Doom", "Duke", "Bandos", "Mole", "GG", "Hespori", "Kalphite Queen",
-		"KBD", "Kraken", "Kree'arra", "K'ril", "Lunar Chests", "Mimic", "Nex", "NM", "Phosani", "Obor", "Phantom Muspah",
-		"Sarach", "Scorpia", "Scurrius", "Skotizo", "Sol Heredit", "Spindel", "Tempoross", "Gauntlet", "CG", "Huey", "Levi",
-		"Whisperer", "ToB", "HMT", "Thermy", "ToA", "ToA Expert", "TzKal-Zuk", "TzTok-Jad", "Vard", "Venenatis", "Vet'ion",
-		"Vorkath", "Wintertodt", "Zalc", "Zulrah"
+		"KBD", "Kraken", "Kree'arra", "K'ril", "Lunar Chests", "Maggot King", "Mimic", "Nex", "NM", "Phosani", "Obor",
+		"Phantom Muspah", "Sarach", "Scorpia", "Scurrius", "Shellbane Gryphon", "Skotizo", "Sol Heredit", "Spindel", "Tempoross",
+		"Gauntlet", "CG", "Huey", "Levi", "Royal Titans", "Whisperer", "ToB", "HMT", "Thermy", "ToA", "ToA Expert",
+		"TzKal-Zuk", "TzTok-Jad", "Vard", "Venenatis", "Vet'ion", "Vorkath", "Wintertodt", "Yama", "Zalc", "Zulrah"
 	};
 	private static final int MAX_SKILL_LINES = 4;
 	private static final int MAX_BOSS_LINES = 3;
@@ -184,7 +183,11 @@ final class OfficialHiscoresGainedClient
 			{
 				continue;
 			}
-			snapshots.add(new HiscoreSnapshot(Long.parseLong(parts[0]), HiscoreValues.deserialize(parts[1])));
+			HiscoreValues values = HiscoreValues.deserialize(parts[1]);
+			if (values != null)
+			{
+				snapshots.add(new HiscoreSnapshot(Long.parseLong(parts[0]), values));
+			}
 		}
 		return snapshots;
 	}
@@ -240,18 +243,17 @@ final class OfficialHiscoresGainedClient
 
 		private String serialize()
 		{
-			return "S{" + serializeMap(skills) + "}|A{" + serializeMap(activities) + "}|B{" + serializeMap(bosses) + "}";
+			return "V2|S{" + serializeMap(skills) + "}|A{" + serializeMap(activities) + "}|B{" + serializeMap(bosses) + "}";
 		}
 
 		private static HiscoreValues deserialize(String value)
 		{
-			HiscoreValues values = new HiscoreValues();
-			if (!value.contains("S{"))
+			if (!value.startsWith("V2|S{"))
 			{
-				// Backwards compatibility with older skill-only snapshots.
-				deserializeMap(value, values.skills);
-				return values;
+				// Older snapshots used outdated hiscore row offsets and can create false boss/activity deltas.
+				return null;
 			}
+			HiscoreValues values = new HiscoreValues();
 			deserializeMap(extract(value, "S{"), values.skills);
 			deserializeMap(extract(value, "A{"), values.activities);
 			deserializeMap(extract(value, "B{"), values.bosses);

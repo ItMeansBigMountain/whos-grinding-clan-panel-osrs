@@ -14,8 +14,8 @@ public class OfficialHiscoresGainedClientTest
 		List<String> baseline = baselineRows();
 		List<String> current = new ArrayList<>(baseline);
 		current.set(5, "1,99,1234567"); // Ranged skill row.
-		current.set(24 + 13, "1,34"); // LMS activity row.
-		current.set(24 + 19 + 38, "1,26"); // Phantom Muspah boss row.
+		current.set(25 + 10, "1,34"); // LMS activity row.
+		current.set(25 + 16 + 40, "1,26"); // Phantom Muspah boss row.
 
 		String summary = OfficialHiscoresGainedClient.summarizeDelta(
 			OfficialHiscoresGainedClient.parseLiteCsv(current),
@@ -30,15 +30,15 @@ public class OfficialHiscoresGainedClientTest
 	private static List<String> baselineRows()
 	{
 		List<String> rows = new ArrayList<>();
-		for (int i = 0; i < 24; i++)
+		for (int i = 0; i < 25; i++)
 		{
 			rows.add("-1,1,0");
 		}
-		for (int i = 0; i < 19; i++)
+		for (int i = 0; i < 16; i++)
 		{
 			rows.add("-1,0");
 		}
-		for (int i = 0; i < 64; i++)
+		for (int i = 0; i < 69; i++)
 		{
 			rows.add("-1,0");
 		}

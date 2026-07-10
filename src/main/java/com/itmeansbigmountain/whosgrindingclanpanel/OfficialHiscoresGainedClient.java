@@ -53,13 +53,25 @@ final class OfficialHiscoresGainedClient
 		HiscoreSnapshot current = new HiscoreSnapshot(Instant.now().getEpochSecond(), currentValues);
 		Path snapshotFile = snapshotFile(normalizedName);
 		List<HiscoreSnapshot> snapshots = readSnapshots(snapshotFile);
-		HiscoreSnapshot baseline = findBaseline(snapshots, current.timestamp - safePeriod.days() * 86400L);
+		long targetTimestamp = current.timestamp - safePeriod.days() * 86400L;
+		HiscoreSnapshot baseline = findBaseline(snapshots, targetTimestamp);
+		boolean partialPeriod = false;
+		if (baseline == null)
+		{
+			baseline = oldestSnapshot(snapshots);
+			partialPeriod = baseline != null;
+		}
 		writeSnapshots(snapshotFile, snapshots, current);
 		if (baseline == null)
 		{
-			return "Official hiscores<br>baseline saved.<br>Gains show after<br>the next scan for<br>this period.";
+			return "Tracking baseline<br>saved. Gains show<br>automatically after<br>this period has<br>elapsed.";
 		}
-		return summarizeDelta(current.values, baseline.values);
+		String summary = summarizeDelta(current.values, baseline.values);
+		if (partialPeriod)
+		{
+			return "Partial since<br>first local snapshot:<br>" + summary;
+		}
+		return summary;
 	}
 
 	static String summarizeDelta(HiscoreValues current, HiscoreValues baseline)
@@ -191,6 +203,11 @@ final class OfficialHiscoresGainedClient
 		{
 			return best;
 		}
+		return null;
+	}
+
+	private static HiscoreSnapshot oldestSnapshot(List<HiscoreSnapshot> snapshots)
+	{
 		return snapshots.stream().min(Comparator.comparingLong(snapshot -> snapshot.timestamp)).orElse(null);
 	}
 
@@ -317,7 +334,7 @@ final class OfficialHiscoresGainedClient
 
 		private String format()
 		{
-			return icon + " " + name + ": <b>+" + formatNumber(gained) + " " + suffix + "</b> (" + label + ")";
+			return icon + " " + name + ": <b>+" + formatNumber(gained) + " " + suffix + "</b>";
 		}
 	}
 }

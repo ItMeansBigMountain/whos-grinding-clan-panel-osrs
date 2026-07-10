@@ -22,9 +22,9 @@ public class OfficialHiscoresGainedClientTest
 			OfficialHiscoresGainedClient.parseLiteCsv(baseline)
 		);
 
-		assertTrue(summary.contains("<b>Skills</b>:<br>▴ Ranged: <b>+1,234,567 xp</b> (XP)"));
-		assertTrue(summary.contains("⚔ Phantom Muspah: <b>+26 kc</b> (KC)"));
-		assertTrue(summary.contains("★ LMS: <b>+34 score</b> (Score)"));
+		assertTrue(summary.contains("<b>Skills</b>:<br>▴ Ranged: <b>+1,234,567 xp</b>"));
+		assertTrue(summary.contains("⚔ Phantom Muspah: <b>+26 kc</b>"));
+		assertTrue(summary.contains("★ LMS: <b>+34 score</b>"));
 	}
 
 	private static List<String> baselineRows()

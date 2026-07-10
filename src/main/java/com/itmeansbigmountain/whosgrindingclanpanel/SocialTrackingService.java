@@ -82,6 +82,13 @@ final class SocialTrackingService
 		refreshedAt = now;
 	}
 
+	void removeOfflineFriends()
+	{
+		trackedMembers.entrySet().removeIf(entry -> entry.getValue().hasSource(TrackedMemberSource.FRIEND)
+			&& entry.getValue().status() == TrackedMemberStatus.OFFLINE);
+		refreshedAt = clock.instant();
+	}
+
 	boolean trackMember(String rawName, TrackedMemberSource source, TrackedMemberStatus status, int world, String summary, Instant now, int maxTrackedMembers)
 	{
 		String displayName = WhosGrindingClanPanelPlugin.normalizePlayerName(rawName);

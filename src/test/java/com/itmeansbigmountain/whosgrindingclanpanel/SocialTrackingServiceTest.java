@@ -61,6 +61,26 @@ public class SocialTrackingServiceTest
 	}
 
 	@Test
+	public void removeOfflineFriendsDropsPreviouslyShownOfflineRows()
+	{
+		SocialTrackingService service = new SocialTrackingService(fixedClock);
+		service.rescan(Collections.singletonList(
+			SocialSourceSnapshot.observedMembers(TrackedMemberSource.FRIEND, Arrays.asList(
+				SocialMemberSnapshot.of("Online Pal", 415, "Friend • world 415"),
+				SocialMemberSnapshot.of("Offline Pal", -1, "Friend • offline")
+			))
+		), 10);
+
+		assertEquals(2, service.snapshot(10).members().size());
+
+		service.removeOfflineFriends();
+
+		SocialTrackerState state = service.snapshot(10);
+		assertEquals(1, state.members().size());
+		assertEquals("Online Pal", state.members().get(0).displayName());
+	}
+
+	@Test
 	public void defaultSourceSnapshotsDoNotSeedFakeMembers()
 	{
 		SocialTrackingService service = new SocialTrackingService(fixedClock);

@@ -134,22 +134,27 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 	private JPanel currentPlayerRow(String playerName, boolean loggedIn)
 	{
-		JPanel row = new JPanel(new BorderLayout(3, 0));
-		row.setBackground(loggedIn && isSelected(playerName) ? ColorScheme.DARK_GRAY_HOVER_COLOR : ColorScheme.DARKER_GRAY_COLOR);
-		row.setBorder(BorderFactory.createCompoundBorder(
-			BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.DARK_GRAY_COLOR),
-			BorderFactory.createEmptyBorder(2, 2, 2, 2)
-		));
+		JPanel row = new JPanel(new BorderLayout(4, 0));
+		row.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		row.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, 28));
 		row.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH, 28));
 		row.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+		JPanel playerBox = new JPanel(new BorderLayout(0, 0));
+		playerBox.setBackground(loggedIn && isSelected(playerName) ? ColorScheme.DARK_GRAY_HOVER_COLOR : ColorScheme.DARKER_GRAY_COLOR);
+		playerBox.setBorder(BorderFactory.createCompoundBorder(
+			BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.DARK_GRAY_COLOR),
+			BorderFactory.createEmptyBorder(2, 2, 2, 2)
+		));
+		playerBox.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH - 30, 28));
+		playerBox.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH - 30, 28));
 		if (loggedIn)
 		{
-			row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+			playerBox.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 		}
 
 		String expanded = loggedIn && isSelected(playerName) ? "▾ " : "▸ ";
-		JLabel label = new JLabel("<html><body style='width:" + MEMBER_TEXT_WIDTH + "px'>"
+		JLabel label = new JLabel("<html><body style='width:" + (MEMBER_TEXT_WIDTH - 30) + "px'>"
 			+ "<b>" + expanded + "You: " + escapeHtml(playerName) + "</b>"
 			+ (loggedIn ? " <span style='color:#b8b8b8'>what others see</span>" : "") + "</body></html>");
 		label.setFont(label.getFont().deriveFont(11f));
@@ -166,10 +171,11 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		};
 		if (loggedIn)
 		{
-			row.addMouseListener(toggleListener);
+			playerBox.addMouseListener(toggleListener);
 			label.addMouseListener(toggleListener);
 		}
-		row.add(label, BorderLayout.CENTER);
+		playerBox.add(label, BorderLayout.CENTER);
+		row.add(playerBox, BorderLayout.CENTER);
 		row.add(refreshButton(), BorderLayout.EAST);
 		return row;
 	}
@@ -388,7 +394,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 				}
 				catch (Exception ex)
 				{
-					grindingSummaryCache.put(cacheKey, fetchOfficialSummary(playerName));
+					grindingSummaryCache.put(cacheKey, dataSection("Official OSRS hiscores delta", "Local snapshots from Jagex hiscores", fetchOfficialSummary(playerName)));
 				}
 				rebuild();
 			}
@@ -399,15 +405,24 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	{
 		if (config.gainDataSource() == GainDataSource.OFFICIAL_HISCORES)
 		{
-			return fetchOfficialSummary(playerName);
+			return dataSection("Official OSRS hiscores delta", "Local snapshots from Jagex hiscores", fetchOfficialSummary(playerName));
 		}
 		if (config.gainDataSource() == GainDataSource.BOTH_FOR_DEVELOPMENT)
 		{
 			String womSummary = fetchWomSummary(playerName);
 			String officialSummary = fetchOfficialSummary(playerName);
-			return "<b>WOM gains</b>:<br>" + womSummary + "<br><b>Official Hiscores tracked</b>:<br>" + officialSummary;
+			return dataSection("Tracker API: Wise Old Man", "WOM gained endpoint", womSummary)
+				+ "<br><br>"
+				+ dataSection("Official OSRS hiscores delta", "Local snapshots from Jagex hiscores", officialSummary);
 		}
-		return fetchWomSummary(playerName);
+		return dataSection("Tracker API: Wise Old Man", "WOM gained endpoint", fetchWomSummary(playerName));
+	}
+
+	private String dataSection(String title, String source, String summary)
+	{
+		return "<b>" + escapeHtml(title) + "</b>:<br>"
+			+ "<span style='color:#b8b8b8'>" + escapeHtml(source) + "</span><br>"
+			+ summary;
 	}
 
 	private String fetchWomSummary(String playerName)

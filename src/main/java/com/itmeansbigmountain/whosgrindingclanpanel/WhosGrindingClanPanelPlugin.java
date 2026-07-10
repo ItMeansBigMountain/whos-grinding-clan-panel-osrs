@@ -90,6 +90,12 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 			public void showOfflineFriendsChanged(boolean showOfflineFriends)
 			{
 				configManager.setConfiguration(CONFIG_GROUP, "showOfflineFriends", showOfflineFriends);
+				if (!showOfflineFriends)
+				{
+					trackingService.removeOfflineFriends();
+					refreshPanel();
+					return;
+				}
 				rescanSocialSources("show offline friends changed");
 				refreshPanel();
 			}
@@ -190,6 +196,10 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 			buildSocialSnapshots(),
 			config.maxTrackedMembers()
 		);
+		if (!config.showOfflineFriends())
+		{
+			trackingService.removeOfflineFriends();
+		}
 		lastAutomaticRefresh = Instant.now();
 		log.debug("{} rescanned social sources: {}", PLUGIN_NAME, reason);
 	}

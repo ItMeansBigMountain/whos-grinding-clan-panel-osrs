@@ -22,14 +22,14 @@ public class WiseOldManGainedClientTest
 
 		String summary = WiseOldManGainedClient.summarizeGains(json);
 
-		assertTrue(summary.contains("<b>Skills</b>:<br>▴ Ranged: <b>+420,000 xp</b> (XP)<br>▴ Slayer: <b>+180,000 xp</b> (XP)"));
-		assertTrue(summary.contains("Ranged: <b>+420,000 xp</b> (XP)"));
-		assertTrue(summary.contains("Slayer: <b>+180,000 xp</b> (XP)"));
-		assertTrue(summary.contains("CoX: <b>+70 kc</b> (KC)"));
-		assertTrue(summary.contains("ToA: <b>+55 kc</b> (KC)"));
-		assertTrue(summary.contains("ToB: <b>+40 kc</b> (KC)"));
-		assertTrue(summary.contains("<b>Bosses</b>:<br>⚔ CoX: <b>+70 kc</b> (KC)<br>⚔ ToA: <b>+55 kc</b> (KC)<br>⚔ ToB: <b>+40 kc</b> (KC)"));
-		assertTrue(summary.contains("<b>Activities</b>:<br>★ LMS: <b>+34 score</b> (Score)<br>★ SW: <b>+20 score</b> (Score)<br>★ Clue Scrolls Hard: <b>+3 score</b> (Score)"));
+		assertTrue(summary.contains("<b>Skills</b>:<br>▴ Ranged: <b>+420,000 xp</b><br>▴ Slayer: <b>+180,000 xp</b>"));
+		assertTrue(summary.contains("Ranged: <b>+420,000 xp</b>"));
+		assertTrue(summary.contains("Slayer: <b>+180,000 xp</b>"));
+		assertTrue(summary.contains("CoX: <b>+70 kc</b>"));
+		assertTrue(summary.contains("ToA: <b>+55 kc</b>"));
+		assertTrue(summary.contains("ToB: <b>+40 kc</b>"));
+		assertTrue(summary.contains("<b>Bosses</b>:<br>⚔ CoX: <b>+70 kc</b><br>⚔ ToA: <b>+55 kc</b><br>⚔ ToB: <b>+40 kc</b>"));
+		assertTrue(summary.contains("<b>Activities</b>:<br>★ LMS: <b>+34 score</b><br>★ SW: <b>+20 score</b><br>★ Clue Scrolls Hard: <b>+3 score</b>"));
 	}
 
 	@Test

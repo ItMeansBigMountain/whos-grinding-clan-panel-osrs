@@ -53,6 +53,9 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 	private WhosGrindingClanPanelConfig config;
 
 	@Inject
+	private ConfigManager configManager;
+
+	@Inject
 	private ClientToolbar clientToolbar;
 
 	private WhosGrindingClanPanelPanel panel;
@@ -73,6 +76,21 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 			public void refreshRequested()
 			{
 				rescanSocialSources("manual refresh");
+				refreshPanel();
+			}
+
+			@Override
+			public void gainsPeriodChanged(GainsPeriod gainsPeriod)
+			{
+				configManager.setConfiguration(CONFIG_GROUP, "gainsPeriod", gainsPeriod);
+				refreshPanel();
+			}
+
+			@Override
+			public void showOfflineFriendsChanged(boolean showOfflineFriends)
+			{
+				configManager.setConfiguration(CONFIG_GROUP, "showOfflineFriends", showOfflineFriends);
+				rescanSocialSources("show offline friends changed");
 				refreshPanel();
 			}
 		});

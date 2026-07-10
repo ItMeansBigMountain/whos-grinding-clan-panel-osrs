@@ -80,7 +80,8 @@ public interface WhosGrindingClanPanelConfig extends Config
 		keyName = "showOfflineFriends",
 		name = "Show offline friends",
 		description = "Include offline friends from the friends list in the tracked panel",
-		position = 8
+		position = 8,
+		hidden = true
 	)
 	default boolean showOfflineFriends()
 	{
@@ -115,7 +116,8 @@ public interface WhosGrindingClanPanelConfig extends Config
 		keyName = "gainsPeriod",
 		name = "Gains period",
 		description = "Time window used for Wise Old Man and official hiscores local-snapshot gained summaries",
-		position = 11
+		position = 11,
+		hidden = true
 	)
 	default GainsPeriod gainsPeriod()
 	{

@@ -33,10 +33,10 @@ A RuneLite external plugin for quickly seeing what friends, friends-chat players
 - `Track friends list` discovers and tracks players from your friends list.
 - `Track friends chat` discovers and tracks players from your active friends chat.
 - `Track clan chat` discovers and tracks players from your active clan channel.
-- `Show offline friends` includes offline friends in the friends-list source when enabled.
+- The panel checkbox next to the lookback selector includes offline friends in the friends-list source when enabled.
 - `Max tracked members` caps the local tracking list for memory/API control.
 - `Refresh interval (minutes)` controls automatic rescans while logged in and defaults to 60 minutes.
-- `Gains period` controls the WOM gained window: day, 7 days, 30 days, or 365 days.
+- The panel lookback dropdown controls the WOM/official hiscores gained window: day, 7 days, 30 days, or 365 days.
 - `Gain data source` chooses `Tracker APIs (WOM)`, `Official Hiscores delta`, or `Both (development)`.
 - `Enable WOM lookups` controls whether selected-player names are sent to Wise Old Man for gained summaries.
 - Hidden `ignoredMembers` persistence remains for compatibility with older versions.
@@ -99,7 +99,7 @@ gradlew.bat run --no-daemon --console=plain
 8. For a known player such as `oyama`, confirm WOM data shows skills, boss KC, and activities line-by-line with bold gained values and common acronyms (`CoX`, `ToA`, `ToB`, `LMS`, etc.) where applicable.
 9. Confirm card width matches the approved top dropdown/title width, has a tiny right pad, and has no blank vertical filler.
 10. Toggle `Enable WOM lookups` off and confirm the card explains lookups are disabled.
-11. Switch gains period to day/7 days/30 days/365 days and confirm the card refreshes using the selected window.
+11. Switch the panel lookback dropdown to day/7 days/30 days/365 days and confirm the card refreshes using the selected window.
 
 ## API usage notes
 

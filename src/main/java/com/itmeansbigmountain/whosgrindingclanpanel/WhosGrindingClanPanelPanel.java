@@ -16,6 +16,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -29,6 +30,10 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	interface PanelActions
 	{
 		void refreshRequested();
+
+		void gainsPeriodChanged(GainsPeriod gainsPeriod);
+
+		void showOfflineFriendsChanged(boolean showOfflineFriends);
 	}
 
 	private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss 'UTC'").withZone(ZoneOffset.UTC);
@@ -82,6 +87,8 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		content.add(summaryLabel("Last scan: " + TIME_FORMAT.format(state.refreshedAt())));
 		content.add(Box.createVerticalStrut(5));
 		content.add(sourceSelector());
+		content.add(Box.createVerticalStrut(3));
+		content.add(lookbackControls());
 		content.add(Box.createVerticalStrut(4));
 
 		for (String message : state.messages())
@@ -115,20 +122,20 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		String currentPlayerName = state.currentPlayerName();
 		if (currentPlayerName == null || currentPlayerName.trim().isEmpty())
 		{
-			content.add(summaryLabel("You: log in to show your character"));
+			content.add(currentPlayerRow("log in to show your character", false));
 			return;
 		}
-		content.add(currentPlayerRow(currentPlayerName));
+		content.add(currentPlayerRow(currentPlayerName, true));
 		if (isSelected(currentPlayerName))
 		{
 			content.add(expandedGrindingCard(currentPlayerName));
 		}
 	}
 
-	private JPanel currentPlayerRow(String playerName)
+	private JPanel currentPlayerRow(String playerName, boolean loggedIn)
 	{
-		JPanel row = new JPanel(new BorderLayout(0, 0));
-		row.setBackground(isSelected(playerName) ? ColorScheme.DARK_GRAY_HOVER_COLOR : ColorScheme.DARKER_GRAY_COLOR);
+		JPanel row = new JPanel(new BorderLayout(3, 0));
+		row.setBackground(loggedIn && isSelected(playerName) ? ColorScheme.DARK_GRAY_HOVER_COLOR : ColorScheme.DARKER_GRAY_COLOR);
 		row.setBorder(BorderFactory.createCompoundBorder(
 			BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.DARK_GRAY_COLOR),
 			BorderFactory.createEmptyBorder(2, 2, 2, 2)
@@ -136,15 +143,18 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		row.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, 28));
 		row.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH, 28));
 		row.setAlignmentX(Component.LEFT_ALIGNMENT);
-		row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		if (loggedIn)
+		{
+			row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		}
 
-		String expanded = isSelected(playerName) ? "▾ " : "▸ ";
+		String expanded = loggedIn && isSelected(playerName) ? "▾ " : "▸ ";
 		JLabel label = new JLabel("<html><body style='width:" + MEMBER_TEXT_WIDTH + "px'>"
 			+ "<b>" + expanded + "You: " + escapeHtml(playerName) + "</b>"
-			+ " <span style='color:#b8b8b8'>what others see</span></body></html>");
+			+ (loggedIn ? " <span style='color:#b8b8b8'>what others see</span>" : "") + "</body></html>");
 		label.setFont(label.getFont().deriveFont(11f));
 		label.setForeground(Color.WHITE);
-		label.setToolTipText("Click to expand/collapse your WOM grinding details");
+		label.setToolTipText(loggedIn ? "Click to expand/collapse your grinding details" : "Log in to show your character");
 
 		java.awt.event.MouseAdapter toggleListener = new java.awt.event.MouseAdapter()
 		{
@@ -154,9 +164,13 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 				toggleSelectedPlayer(playerName);
 			}
 		};
-		row.addMouseListener(toggleListener);
-		label.addMouseListener(toggleListener);
+		if (loggedIn)
+		{
+			row.addMouseListener(toggleListener);
+			label.addMouseListener(toggleListener);
+		}
 		row.add(label, BorderLayout.CENTER);
+		row.add(refreshButton(), BorderLayout.EAST);
 		return row;
 	}
 
@@ -172,8 +186,8 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		sourceDropdown.setSelectedItem(filter);
 		sourceDropdown.setFont(sourceDropdown.getFont().deriveFont(11f));
 		sourceDropdown.setFocusable(false);
-		sourceDropdown.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH - 30, CONTROL_HEIGHT));
-		sourceDropdown.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH - 30, CONTROL_HEIGHT));
+		sourceDropdown.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, CONTROL_HEIGHT));
+		sourceDropdown.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH, CONTROL_HEIGHT));
 		sourceDropdown.addActionListener(event -> {
 			SocialSourceFilter selectedFilter = (SocialSourceFilter) sourceDropdown.getSelectedItem();
 			if (selectedFilter != null && selectedFilter != filter)
@@ -183,7 +197,48 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			}
 		});
 		row.add(sourceDropdown, BorderLayout.CENTER);
+		return row;
+	}
 
+	private JPanel lookbackControls()
+	{
+		JPanel row = new JPanel(new BorderLayout(3, 0));
+		row.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		row.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH, CONTROL_HEIGHT));
+		row.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH, CONTROL_HEIGHT));
+		row.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+		JComboBox<GainsPeriod> gainsPeriodDropdown = new JComboBox<>(GainsPeriod.values());
+		gainsPeriodDropdown.setSelectedItem(config.gainsPeriod());
+		gainsPeriodDropdown.setFont(gainsPeriodDropdown.getFont().deriveFont(11f));
+		gainsPeriodDropdown.setFocusable(false);
+		gainsPeriodDropdown.setMaximumSize(new Dimension(PANEL_TEXT_WIDTH - 30, CONTROL_HEIGHT));
+		gainsPeriodDropdown.setPreferredSize(new Dimension(PANEL_TEXT_WIDTH - 30, CONTROL_HEIGHT));
+		gainsPeriodDropdown.addActionListener(event -> {
+			GainsPeriod selectedPeriod = (GainsPeriod) gainsPeriodDropdown.getSelectedItem();
+			if (selectedPeriod != null && selectedPeriod != config.gainsPeriod())
+			{
+				grindingSummaryCache.clear();
+				actions.gainsPeriodChanged(selectedPeriod);
+			}
+		});
+		row.add(gainsPeriodDropdown, BorderLayout.CENTER);
+
+		JCheckBox showOfflineCheckbox = new JCheckBox("☾", config.showOfflineFriends());
+		showOfflineCheckbox.setToolTipText("Show offline friends");
+		showOfflineCheckbox.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		showOfflineCheckbox.setForeground(Color.LIGHT_GRAY);
+		showOfflineCheckbox.setMargin(new Insets(0, 0, 0, 0));
+		showOfflineCheckbox.setFocusable(false);
+		showOfflineCheckbox.setMaximumSize(new Dimension(26, CONTROL_HEIGHT));
+		showOfflineCheckbox.setPreferredSize(new Dimension(26, CONTROL_HEIGHT));
+		showOfflineCheckbox.addActionListener(event -> actions.showOfflineFriendsChanged(showOfflineCheckbox.isSelected()));
+		row.add(showOfflineCheckbox, BorderLayout.EAST);
+		return row;
+	}
+
+	private JButton refreshButton()
+	{
 		JButton refreshButton = new JButton("↻");
 		refreshButton.setToolTipText("Rescan social sources");
 		refreshButton.setMargin(new Insets(0, 3, 0, 3));
@@ -194,8 +249,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			grindingSummaryCache.clear();
 			actions.refreshRequested();
 		});
-		row.add(refreshButton, BorderLayout.EAST);
-		return row;
+		return refreshButton;
 	}
 
 	private JLabel sectionTitle(String text)

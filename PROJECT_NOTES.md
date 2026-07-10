@@ -110,8 +110,8 @@ RemovedFriend#getNameable()
 - Manual rescan button: `↻`.
 - Automatic scan on login and interval.
 - Configurable refresh interval, default 60 minutes.
-- Configurable `Show offline friends`, default false.
-- Friends list hides offline friends unless `Show offline friends` is checked.
+- Panel-level offline friends checkbox, default false.
+- Friends list hides offline friends unless the panel checkbox is checked.
 - Each row shows a quick icon:
   - `●` online
   - `◇` social/channel source

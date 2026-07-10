@@ -33,7 +33,7 @@ final class WiseOldManGainedClient
 			HttpResult updateResult = request("POST", API_BASE_URL + PlayerTrackingLinks.urlEncode(normalizedName));
 			if (updateResult.responseCode != 200 && updateResult.responseCode != 201)
 			{
-				return "Player not on<br>WOM yet. Open<br>Wise Old Man and<br>track/update them,<br>then refresh here.";
+				return "Player not on<br>WOM yet. Saved<br>official baseline<br>and will keep<br>checking trackers.";
 			}
 			gainedResult = request("GET", gainedUrl(normalizedName, safePeriod));
 		}

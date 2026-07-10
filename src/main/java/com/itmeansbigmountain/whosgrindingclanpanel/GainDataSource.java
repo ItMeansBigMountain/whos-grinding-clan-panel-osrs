@@ -1,6 +1,6 @@
 package com.itmeansbigmountain.whosgrindingclanpanel;
 
-enum GainDataSource
+public enum GainDataSource
 {
 	TRACKER_APIS("Tracker APIs (WOM)"),
 	OFFICIAL_HISCORES("Official Hiscores delta"),

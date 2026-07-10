@@ -27,13 +27,13 @@ final class WiseOldManGainedClient
 		String normalizedName = WhosGrindingClanPanelPlugin.normalizePlayerName(playerName);
 		GainsPeriod safePeriod = period == null ? GainsPeriod.SEVEN_DAYS : period;
 		HttpResult gainedResult = request("GET", gainedUrl(normalizedName, safePeriod));
-		if (gainedResult.responseCode != 200)
+		if (gainedResult.responseCode != 200 || (gainedResult.responseCode == 200 && summarizeGains(gainedResult.body).startsWith("No recent gains")))
 		{
-			// If the player is not tracked yet, this starts/updates tracking on Wise Old Man, then retries gained.
+			// If the player is not tracked yet, or has stale/no gains, ask WOM to create/update then retry gained.
 			HttpResult updateResult = request("POST", API_BASE_URL + PlayerTrackingLinks.urlEncode(normalizedName));
 			if (updateResult.responseCode != 200 && updateResult.responseCode != 201)
 			{
-				throw new IOException("Wise Old Man update returned HTTP " + updateResult.responseCode);
+				return "Player not on<br>WOM yet. Open<br>Wise Old Man and<br>track/update them,<br>then refresh here.";
 			}
 			gainedResult = request("GET", gainedUrl(normalizedName, safePeriod));
 		}
@@ -292,7 +292,7 @@ final class WiseOldManGainedClient
 
 		private String format()
 		{
-			return icon() + " " + metric + ": <b>+" + formatNumber(gained) + " " + suffix + "</b> (" + label + ")";
+			return icon() + " " + metric + ": <b>+" + formatNumber(gained) + " " + suffix + "</b>";
 		}
 
 		private String icon()

@@ -40,9 +40,6 @@ final class OfficialHiscoresGainedClient
 		"Gauntlet", "CG", "Huey", "Levi", "Royal Titans", "Whisperer", "ToB", "HMT", "Thermy", "ToA", "ToA Expert",
 		"TzKal-Zuk", "TzTok-Jad", "Vard", "Venenatis", "Vet'ion", "Vorkath", "Wintertodt", "Yama", "Zalc", "Zulrah"
 	};
-	private static final int MAX_SKILL_LINES = 4;
-	private static final int MAX_BOSS_LINES = 3;
-	private static final int MAX_ACTIVITY_LINES = 3;
 
 	String fetchGrindingSummary(String playerName, GainsPeriod period) throws IOException
 	{
@@ -76,9 +73,9 @@ final class OfficialHiscoresGainedClient
 	static String summarizeDelta(HiscoreValues current, HiscoreValues baseline)
 	{
 		List<String> sections = new ArrayList<>();
-		addSection(sections, "Skills", gainedLines(current.skills, baseline.skills, "XP", "xp", "▴", MAX_SKILL_LINES), MAX_SKILL_LINES);
-		addSection(sections, "Bosses", gainedLines(current.bosses, baseline.bosses, "KC", "kc", "⚔", MAX_BOSS_LINES), MAX_BOSS_LINES);
-		addSection(sections, "Activities", gainedLines(current.activities, baseline.activities, "Score", "score", "★", MAX_ACTIVITY_LINES), MAX_ACTIVITY_LINES);
+		addSection(sections, "Skills", gainedLines(current.skills, baseline.skills, "XP", "xp", "▴"));
+		addSection(sections, "Bosses", gainedLines(current.bosses, baseline.bosses, "KC", "kc", "⚔"));
+		addSection(sections, "Activities", gainedLines(current.activities, baseline.activities, "Score", "score", "★"));
 		if (sections.isEmpty())
 		{
 			return "No official<br>hiscores gains<br>found for this<br>saved period.<br>Try again after<br>more changes.";
@@ -86,22 +83,21 @@ final class OfficialHiscoresGainedClient
 		return String.join("<br>", sections);
 	}
 
-	private static List<GainedLine> gainedLines(Map<String, Long> current, Map<String, Long> baseline, String label, String suffix, String icon, int limit)
+	private static List<GainedLine> gainedLines(Map<String, Long> current, Map<String, Long> baseline, String label, String suffix, String icon)
 	{
 		return current.entrySet().stream()
 			.filter(entry -> !"Overall".equals(entry.getKey()))
 			.map(entry -> new GainedLine(entry.getKey(), Math.max(0, entry.getValue() - baseline.getOrDefault(entry.getKey(), entry.getValue())), label, suffix, icon))
 			.filter(line -> line.gained > 0)
 			.sorted(Comparator.comparingLong((GainedLine line) -> line.gained).reversed())
-			.limit(limit)
 			.collect(Collectors.toList());
 	}
 
-	private static void addSection(List<String> sections, String title, List<GainedLine> lines, int maxLines)
+	private static void addSection(List<String> sections, String title, List<GainedLine> lines)
 	{
 		if (!lines.isEmpty())
 		{
-			sections.add("<b>" + title + "</b>:<br>" + lines.stream().limit(maxLines).map(GainedLine::format).collect(Collectors.joining("<br>")));
+			sections.add("<b>" + title + "</b>:<br>" + lines.stream().map(GainedLine::format).collect(Collectors.joining("<br>")));
 		}
 	}
 

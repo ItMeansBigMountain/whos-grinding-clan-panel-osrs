@@ -18,9 +18,6 @@ import java.util.stream.Collectors;
 final class WiseOldManGainedClient
 {
 	private static final String API_BASE_URL = "https://api.wiseoldman.net/v2/players/";
-	private static final int MAX_SKILL_LINES = 4;
-	private static final int MAX_BOSS_LINES = 3;
-	private static final int MAX_ACTIVITY_LINES = 3;
 
 	String fetchGrindingSummary(String playerName, GainsPeriod period) throws IOException
 	{
@@ -90,9 +87,9 @@ final class WiseOldManGainedClient
 		collectSection(activities, data.getAsJsonObject("activities"), "Score", "score", "score", false);
 
 		List<String> sections = new ArrayList<>();
-		addSection(sections, "Skills", skills, MAX_SKILL_LINES);
-		addSection(sections, "Bosses", bosses, MAX_BOSS_LINES);
-		addSection(sections, "Activities", activities, MAX_ACTIVITY_LINES);
+		addSection(sections, "Skills", skills);
+		addSection(sections, "Bosses", bosses);
+		addSection(sections, "Activities", activities);
 
 		if (sections.isEmpty())
 		{
@@ -101,12 +98,11 @@ final class WiseOldManGainedClient
 		return String.join("<br>", sections);
 	}
 
-	private static void addSection(List<String> sections, String title, List<GainedLine> lines, int maxLines)
+	private static void addSection(List<String> sections, String title, List<GainedLine> lines)
 	{
 		List<GainedLine> positiveLines = lines.stream()
 			.filter(line -> line.gained > 0)
 			.sorted(Comparator.comparingLong((GainedLine line) -> line.gained).reversed())
-			.limit(maxLines)
 			.collect(Collectors.toList());
 		if (!positiveLines.isEmpty())
 		{

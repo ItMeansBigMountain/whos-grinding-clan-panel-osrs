@@ -12,11 +12,6 @@ The plugin discovers players from RuneLite social sources, shows them in a compa
 
 The panel stays inside RuneLite's default sidebar width. Use the source dropdown to switch between Friends Chat, Friends List, and Clan Chat. The current player row is always available at the top, with the refresh button separated by a small gap.
 
-### Expanded player card
-
-![Who's Grinding Panel expanded player card](docs/screenshots/expanded-gain-card.png)
-
-Clicking a player opens a grinding-only card. The card uses as much vertical space as needed while staying within the sidebar width, so every positive tracked gain can be shown line-by-line.
 
 ## What it does
 

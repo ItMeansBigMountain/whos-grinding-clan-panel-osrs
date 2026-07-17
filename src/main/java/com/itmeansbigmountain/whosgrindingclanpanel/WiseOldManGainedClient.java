@@ -72,7 +72,7 @@ final class WiseOldManGainedClient
 
 	static String summarizeGains(String json)
 	{
-		JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+		JsonObject root = new JsonParser().parse(json).getAsJsonObject();
 		JsonObject data = root.getAsJsonObject("data");
 		if (data == null)
 		{

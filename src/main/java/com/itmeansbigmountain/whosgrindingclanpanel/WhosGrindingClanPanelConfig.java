@@ -127,7 +127,7 @@ public interface WhosGrindingClanPanelConfig extends Config
 	@ConfigItem(
 		keyName = "gainDataSource",
 		name = "Gain data source",
-		description = "Choose tracker API gains, official hiscores local deltas, or both side-by-side for development comparison",
+		description = "Choose Wise Old Man tracker gains or official hiscores local deltas",
 		position = 12
 	)
 	default GainDataSource gainDataSource()

@@ -3,8 +3,7 @@ package com.itmeansbigmountain.whosgrindingclanpanel;
 public enum GainDataSource
 {
 	TRACKER_APIS("Tracker APIs (WOM)"),
-	OFFICIAL_HISCORES("Official Hiscores delta"),
-	BOTH_FOR_DEVELOPMENT("Both (development)");
+	OFFICIAL_HISCORES("Official Hiscores delta");
 
 	private final String label;
 

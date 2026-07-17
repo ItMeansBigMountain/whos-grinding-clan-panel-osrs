@@ -407,14 +407,6 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		{
 			return dataSection("Fallback: Official OSRS hiscores", fallbackSourceNote(), fetchOfficialSummary(playerName));
 		}
-		if (config.gainDataSource() == GainDataSource.BOTH_FOR_DEVELOPMENT)
-		{
-			String womSummary = fetchWomSummary(playerName);
-			String officialSummary = fetchOfficialSummary(playerName);
-			return dataSection("Tracker API: Wise Old Man", "Weekly/monthly/yearly tracker period", womSummary)
-				+ separator()
-				+ dataSection("Fallback: Official OSRS hiscores", fallbackSourceNote(), officialSummary);
-		}
 		return dataSection("Tracker API: Wise Old Man", "Weekly/monthly/yearly tracker period", fetchWomSummary(playerName));
 	}
 

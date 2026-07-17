@@ -118,7 +118,7 @@ RuneLite config still includes:
 - `Track clan chat` — discovers players from your active clan channel.
 - `Max tracked members` — caps the local tracking list for memory/API control.
 - `Refresh interval (minutes)` — controls automatic rescans while logged in.
-- `Gain data source` — chooses `Tracker APIs (WOM)`, `Official Hiscores delta`, or `Both (development)`.
+- `Gain data source` — chooses `Tracker APIs (WOM)` or `Official Hiscores delta`.
 - `Enable WOM lookups` — controls whether selected-player names are sent to Wise Old Man.
 
 The lookback and offline-friends values are persisted through config storage but are controlled from the panel UI.

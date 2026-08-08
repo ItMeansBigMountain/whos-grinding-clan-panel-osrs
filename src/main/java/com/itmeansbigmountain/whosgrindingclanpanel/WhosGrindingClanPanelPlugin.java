@@ -1,13 +1,14 @@
 package com.itmeansbigmountain.whosgrindingclanpanel;
 
 import com.google.inject.Provides;
-import java.awt.Color;
-import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
@@ -124,18 +125,20 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 		log.debug("{} stopped", PLUGIN_NAME);
 	}
 
-	private BufferedImage buildNavigationIcon()
+	private static BufferedImage buildNavigationIcon()
 	{
-		BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-		Graphics2D graphics = image.createGraphics();
-		graphics.setColor(new Color(41, 41, 41));
-		graphics.fillRect(0, 0, 16, 16);
-		graphics.setColor(new Color(73, 181, 90));
-		graphics.fillRect(2, 10, 3, 4);
-		graphics.fillRect(7, 6, 3, 8);
-		graphics.fillRect(12, 3, 3, 11);
-		graphics.dispose();
-		return image;
+		try (InputStream stream = WhosGrindingClanPanelPlugin.class.getResourceAsStream("/whos_grinding_icon.png"))
+		{
+			if (stream != null)
+			{
+				return ImageIO.read(stream);
+			}
+		}
+		catch (IOException ignored)
+		{
+			// Use RuneLite's blank fallback if icon decoding fails.
+		}
+		return new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
 	}
 
 	@Subscribe

@@ -60,7 +60,12 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 		setLayout(new BorderLayout());
 		content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-		content.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+		content.setBorder(BorderFactory.createEmptyBorder(
+			2,
+			WhosGrindingPanelDimensions.CONTENT_LEFT_INSET,
+			2,
+			0
+		));
 		content.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
 		JScrollPane scrollPane = new JScrollPane(content);

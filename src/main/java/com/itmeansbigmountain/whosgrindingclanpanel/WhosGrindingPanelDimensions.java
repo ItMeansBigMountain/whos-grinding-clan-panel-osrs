@@ -4,6 +4,7 @@ import net.runelite.client.ui.PluginPanel;
 
 final class WhosGrindingPanelDimensions
 {
+	static final int CONTENT_LEFT_INSET = 4;
 	static final int CONTENT_PADDING = 0;
 	static final int EXTRA_SAFETY_WIDTH = 18;
 	static final int CONTENT_WIDTH = PluginPanel.PANEL_WIDTH

@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Who's Grinding Panel architecture</title>
+  <desc id="desc">RuneLite social sources are merged locally into a compact sidebar. Opening one player card sends only that selected name to either Wise Old Man or Jagex hiscores, and results return to an in-memory card cache. Official hiscore baselines are stored locally.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#17191e"/><stop offset="1" stop-color="#252932"/>
+    </linearGradient>
+    <linearGradient id="local" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#243a4f"/><stop offset="1" stop-color="#1d2d3d"/>
+    </linearGradient>
+    <linearGradient id="external" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b2f23"/><stop offset="1" stop-color="#2b241e"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#000" flood-opacity=".35"/></filter>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#65b8e8"/></marker>
+    <marker id="arrowGold" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#d8ad56"/></marker>
+    <style>
+      .title{font:700 34px system-ui,-apple-system,Segoe UI,sans-serif;fill:#f2ede3}.sub{font:400 16px system-ui,-apple-system,Segoe UI,sans-serif;fill:#bbb6ac}.lane{font:700 13px system-ui,-apple-system,Segoe UI,sans-serif;letter-spacing:1.8px;fill:#8ca7ba}.boxTitle{font:700 18px system-ui,-apple-system,Segoe UI,sans-serif;fill:#f5f1e8}.body{font:400 14px system-ui,-apple-system,Segoe UI,sans-serif;fill:#c8c4bb}.small{font:400 12px system-ui,-apple-system,Segoe UI,sans-serif;fill:#a7a39b}.pill{font:700 12px system-ui,-apple-system,Segoe UI,sans-serif;fill:#15171b}.arrowLabel{font:600 12px system-ui,-apple-system,Segoe UI,sans-serif;fill:#9fc9e1}.localBox{fill:url(#local);stroke:#4d7593;stroke-width:1.5}.externalBox{fill:url(#external);stroke:#8e7142;stroke-width:1.5}.neutralBox{fill:#292d35;stroke:#505763;stroke-width:1.5}
+    </style>
+  </defs>
+  <rect width="1200" height="760" rx="20" fill="url(#bg)"/>
+  <text x="60" y="58" class="title">Who’s Grinding — architecture &amp; data flow</text>
+  <text x="60" y="87" class="sub">Social discovery stays local. Only an opened player card triggers a public tracker lookup.</text>
+
+  <text x="60" y="130" class="lane">INSIDE RUNELITE — LOCAL ONLY</text>
+  <rect x="45" y="145" width="1110" height="355" rx="18" fill="none" stroke="#3b5263" stroke-width="1.5" stroke-dasharray="8 7"/>
+
+  <g filter="url(#shadow)">
+    <rect x="75" y="180" width="220" height="245" rx="14" class="localBox"/>
+    <text x="98" y="215" class="boxTitle">RuneLite social APIs</text>
+    <rect x="98" y="238" width="174" height="39" rx="8" class="neutralBox"/><text x="116" y="263" class="body">Friends list</text>
+    <rect x="98" y="289" width="174" height="39" rx="8" class="neutralBox"/><text x="116" y="314" class="body">Friends chat</text>
+    <rect x="98" y="340" width="174" height="39" rx="8" class="neutralBox"/><text x="116" y="365" class="body">Clan channel</text>
+    <text x="98" y="404" class="small">name • online state • world</text>
+
+    <rect x="385" y="180" width="270" height="245" rx="14" class="localBox"/>
+    <text x="410" y="215" class="boxTitle">SocialTrackingService</text>
+    <text x="410" y="251" class="body">Normalizes &amp; de-duplicates names</text>
+    <text x="410" y="279" class="body">Merges overlapping sources</text>
+    <text x="410" y="307" class="body">Applies ignore/offline filters</text>
+    <text x="410" y="335" class="body">Caps the local member list</text>
+    <text x="410" y="363" class="body">Sorts online players first</text>
+    <rect x="410" y="383" width="185" height="25" rx="12" fill="#65b8e8"/><text x="432" y="400" class="pill">NO ROSTER UPLOAD</text>
+
+    <rect x="745" y="180" width="360" height="245" rx="14" class="localBox"/>
+    <text x="770" y="215" class="boxTitle">Compact RuneLite side panel</text>
+    <text x="770" y="251" class="body">Source selector • lookback • offline toggle</text>
+    <text x="770" y="279" class="body">Current player pinned at the top</text>
+    <text x="770" y="307" class="body">Expandable player rows</text>
+    <text x="770" y="335" class="body">Skills • bosses • activities</text>
+    <text x="770" y="363" class="body">In-memory card result cache</text>
+    <rect x="770" y="383" width="256" height="25" rx="12" fill="#86c56f"/><text x="789" y="400" class="pill">CLICK ONE PLAYER TO LOOK UP</text>
+  </g>
+
+  <path d="M295 302 H385" stroke="#65b8e8" stroke-width="3" marker-end="url(#arrowBlue)"/><text x="316" y="290" class="arrowLabel">snapshots</text>
+  <path d="M655 302 H745" stroke="#65b8e8" stroke-width="3" marker-end="url(#arrowBlue)"/><text x="675" y="290" class="arrowLabel">state</text>
+
+  <text x="60" y="550" class="lane">PUBLIC LOOKUP — ONLY AFTER A PLAYER CARD IS OPENED</text>
+  <path d="M925 425 V545" stroke="#d8ad56" stroke-width="3" marker-end="url(#arrowGold)"/><text x="944" y="488" class="arrowLabel">selected name + period</text>
+
+  <g filter="url(#shadow)">
+    <rect x="75" y="580" width="470" height="130" rx="14" class="externalBox"/>
+    <text x="100" y="615" class="boxTitle">Wise Old Man API — tracker mode</text>
+    <text x="100" y="645" class="body">GET period gains → skills XP, boss KC, activity scores</text>
+    <text x="100" y="673" class="body">POST update/create when missing or stale, then retry GET</text>
+    <text x="100" y="696" class="small">No API key, RuneLite credentials, world, or social membership sent</text>
+
+    <rect x="655" y="580" width="470" height="130" rx="14" class="externalBox"/>
+    <text x="680" y="615" class="boxTitle">Jagex official hiscores — delta mode</text>
+    <text x="680" y="645" class="body">GET current public lite hiscores CSV for the selected player</text>
+    <text x="680" y="673" class="body">Compare to last local scan; save new baseline on this device</text>
+    <text x="680" y="696" class="small">~/.runelite/whos-grinding-hiscores/ • snapshots retained up to ~370 days</text>
+  </g>
+
+  <path d="M925 545 C800 545 480 545 310 580" fill="none" stroke="#d8ad56" stroke-width="3" marker-end="url(#arrowGold)"/>
+  <path d="M925 545 C970 550 960 565 890 580" fill="none" stroke="#d8ad56" stroke-width="3" marker-end="url(#arrowGold)"/>
+</svg>

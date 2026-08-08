@@ -15,6 +15,7 @@ public class WhosGrindingPanelDimensionsTest
 		assertEquals(17, PluginPanel.SCROLLBAR_WIDTH);
 		assertEquals(6, PluginPanel.BORDER_OFFSET);
 		assertEquals(178, WhosGrindingPanelDimensions.CONTENT_WIDTH);
+		assertEquals(4, WhosGrindingPanelDimensions.CONTENT_LEFT_INSET);
 	}
 
 	@Test

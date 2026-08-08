@@ -1,70 +1,108 @@
-# Who's Grinding Panel
+# Who’s Grinding Panel
 
-A RuneLite external plugin that helps you see **what your friends, friends-chat members, and clanmates have been grinding** without leaving the sidebar.
+<div align="center">
 
-The plugin discovers players from RuneLite social sources, shows them in a compact list, and expands any player into an inline grinding card with XP/KC/score gains from tracker APIs and fallback hiscore scans.
+<img src="icon.png" alt="Who’s Grinding Panel icon" width="72">
+
+## See what the crew has been grinding—without leaving RuneLite.
+
+**Friends, friends chat, and clanmates in one compact sidebar. Open a player to see XP gains, boss KC, and activity scores from Wise Old Man or your own official-hiscores scan history.**
+
+[![RuneLite](https://img.shields.io/badge/RuneLite-Plugin_Hub-cb9b46?style=for-the-badge)](https://runelite.net/plugin-hub/)
+[![Java 11](https://img.shields.io/badge/Java-11-5d8aa8?style=for-the-badge)](#local-development)
+[![Build](https://img.shields.io/badge/build-passing-4f9d69?style=for-the-badge)](#build-and-test)
+[![Privacy](https://img.shields.io/badge/privacy-no_telemetry-6f87b8?style=for-the-badge)](#privacy-and-network-usage)
+
+</div>
+
+Who’s Grinding Panel is a RuneLite external plugin for quickly answering one question:
+
+> **What have my friends and clanmates actually been doing?**
+
+The plugin reads RuneLite’s local social sources, combines duplicate players into one clean list, and renders it at the normal sidebar width. Opening a player card performs an on-demand public lookup and groups every positive result into **Skills**, **Bosses**, and **Activities**.
+
+It does not upload your friends list, clan roster, worlds, credentials, or account session. Only the name of the player card you open—and the selected period when using Wise Old Man—is sent to the selected public service.
 
 ## Screenshots
 
-### Social-source list
+### Social sources in one compact panel
 
-![Who's Grinding Panel social list](docs/screenshots/panel-social-list.png)
+![Who’s Grinding Panel showing the current player, source selector, lookback control, and social rows](docs/screenshots/panel-social-list.png)
 
-The panel stays inside RuneLite's default sidebar width. Use the source dropdown to switch between Friends Chat, Friends List, and Clan Chat. The current player row is always available at the top, with the refresh button separated by a small gap.
+The current account stays pinned at the top. Switch between **Friends Chat**, **Friends List**, and **Clan Chat**, choose a lookback period, include or hide offline friends, and refresh without leaving the panel.
 
+## Features
 
-## What it does
-
-- Discovers players from enabled RuneLite social sources:
+- Discovers players directly from RuneLite’s local:
   - Friends list
   - Friends chat
-  - Clan chat / clan channel
-- Shows a compact player list with online/offline state and world when available.
-- Keeps the logged-in player visible at the top so you can see what others can see for your own account.
-- Lets you refresh social sources with the `↻` button next to the current-player row.
-- Lets you switch the visible source directly in the panel.
-- Lets you choose the lookback window directly in the panel:
-  - Day
-  - 7 days
-  - 30 days
-  - 365 days
-- Lets you toggle offline friends from the panel checkbox next to the lookback dropdown.
-- Removes cached offline friend rows immediately when the offline checkbox is turned off.
-- Expands a clicked player inline to show what they have been grinding.
-- Shows **all positive tracked changes**, not just a top-four summary.
-- Groups gains into clear sections:
-  - Skills — XP gains
-  - Bosses — KC gains
-  - Activities — score/minigame gains
-- Cleans up common OSRS labels, for example:
-  - `chambers_of_xeric` -> `CoX`
-  - `tombs_of_amascut` -> `ToA`
-  - `theatre_of_blood` -> `ToB`
-  - `last_man_standing` -> `LMS`
+  - Clan channel
+- Merges the same player across multiple sources instead of showing duplicates.
+- Displays online/offline state and world where RuneLite exposes it.
+- Keeps the current account available at the top of every source view.
+- Supports Day, 7-day, 30-day, and 365-day tracker windows.
+- Expands players inline—no oversized second window or horizontal layout.
+- Shows **all positive gains**, grouped into:
+  - **Skills** — XP gained
+  - **Bosses** — KC gained
+  - **Activities** — score or minigame gains
+- Cleans common tracker labels into familiar OSRS names such as `CoX`, `ToA`, `ToB`, `CG`, `LMS`, and `GotR`.
+- Supports two deliberately different gain models:
+  - Wise Old Man period gains
+  - Official hiscores deltas since the plugin’s previous local scan
+- Performs lookups only when a player card is opened and its result is not already cached.
+- Rescans enabled RuneLite social sources on startup, login, configuration change, manual refresh, and the configured interval.
 
-## Gain sources
+## Architecture
 
-The plugin separates social discovery from gain lookup.
+![Who’s Grinding architecture showing local RuneLite social discovery, local normalization and panel rendering, then on-demand Wise Old Man or Jagex hiscores lookup for one selected player](docs/assets/whos-grinding-architecture.svg)
 
-Social discovery answers:
+### Data flow
 
-> Who is in my friends list, friends chat, or clan chat?
+1. `WhosGrindingClanPanelPlugin` reads enabled social sources through RuneLite’s client API.
+2. Each source becomes a local `SocialSourceSnapshot` containing player name, status, world, and source label.
+3. `SocialTrackingService` normalizes names, merges duplicate identities, applies ignore/offline rules, enforces the configured cap, and sorts online players first.
+4. `WhosGrindingClanPanelPanel` renders the local state in RuneLite’s sidebar.
+5. Opening one player card chooses the configured gain client:
+   - `WiseOldManGainedClient` for true day/week/month/year tracker gains.
+   - `OfficialHiscoresGainedClient` for differences from the last scan stored on this device.
+6. The lookup runs in a background worker. The result is formatted, cached in memory for that player/period/source, and returned to the expanded card.
 
-Gain lookup answers:
+Social discovery and gain lookup are intentionally separate. Seeing someone in the list does **not** trigger a web request.
 
-> What has this selected player gained?
+## What APIs does it call?
 
-### Tracker API: Wise Old Man
+### RuneLite Client API — local integration
 
-Wise Old Man is the primary tracker source for day/week/month/year style gains.
+These are local client calls, not requests to a third-party server.
 
-When available, the plugin reads:
+| RuneLite API | Data read | Purpose |
+| --- | --- | --- |
+| `Client#getFriendContainer()` | Friend names and worlds | Build the Friends List source; optionally include offline friends. |
+| `Client#getFriendsChatManager()` | Friends-chat member names and worlds | Build the Friends Chat source. |
+| `Client#getClanChannel()` | Clan-channel member names and worlds | Build the Clan Chat source. |
+| `Client#getLocalPlayer()` | Current display name | Pin the current account at the top. |
+| `Client#getGameState()` and RuneLite events | Login/tick/config lifecycle | Trigger local rescans and the optional login hint. |
+| `ClientToolbar` / `NavigationButton` | RuneLite sidebar integration | Register the approved plugin icon and compact panel. |
+| `ConfigManager` | Plugin settings | Persist the panel lookback and offline-friend toggle locally. |
 
-```text
-https://api.wiseoldman.net/v2/players/{name}/gained?period={day|week|month|year}
+The plugin never reads bank contents, inventory contents, equipment, chat messages, passwords, Jagex account tokens, or RuneLite credentials.
+
+### Wise Old Man API — tracker mode
+
+Primary endpoint:
+
+```http
+GET https://api.wiseoldman.net/v2/players/{url-encoded-name}/gained?period={day|week|month|year}
 ```
 
-The selected panel lookback maps to WOM periods:
+If WOM does not have useful current data for the selected player, the plugin requests a public tracker create/update and retries:
+
+```http
+POST https://api.wiseoldman.net/v2/players/{url-encoded-name}
+```
+
+The POST has no request body. Requests use the user agent `WhosGrindingPanel RuneLite plugin`, a 3.5-second connection timeout, and a 5-second read timeout.
 
 | Panel lookback | WOM period |
 | --- | --- |
@@ -73,103 +111,146 @@ The selected panel lookback maps to WOM periods:
 | 30 days | `month` |
 | 365 days | `year` |
 
-### Fallback: Official OSRS hiscores
+Returned public data is parsed into positive skill XP, boss KC, and activity-score gains. All positive entries are shown, largest first within each section.
 
-Official OSRS hiscores do **not** provide weekly/monthly/yearly history by themselves. They expose current totals only.
+### Jagex official hiscores — local-delta mode
 
-Because of that, the fallback is intentionally labeled differently:
+```http
+GET https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player={url-encoded-name}
+```
+
+The official lite endpoint exposes current totals—not historical day/week/month/year gains. The plugin therefore calculates:
 
 ```text
 current official hiscores total
--
-last plugin scan official hiscores total
+− previous official hiscores total saved by this plugin
+= change since the previous local scan
 ```
 
-So fallback values mean:
+The first successful scan establishes a baseline. Later scans can show positive XP, KC, and activity differences. These values are always labeled as **difference since last plugin scan**, never as a WOM period.
 
-> Difference between the current scan and the last time this plugin scanned that player.
+Local baselines are stored at:
 
-This is not the same thing as a WOM weekly/monthly/yearly tracker period. The player card makes that clear and separates tracker data from fallback data with a divider line.
+```text
+~/.runelite/whos-grinding-hiscores/{normalized-player-name}.csv
+```
 
-Fallback APIs checked/planned by the plugin are:
+Snapshots older than approximately 370 days are removed when the file is rewritten. This data stays on the player’s computer.
 
-- TempleOSRS
-- Crystal Math Labs
-- Official OSRS hiscores
+### Browser links—not background API calls
 
-Official OSRS hiscores are the reliable last-resort fallback for saving local baselines and showing future scan-to-scan differences.
+Player cards can construct links to public Wise Old Man, TempleOSRS, and official Jagex hiscore pages. Opening one uses the browser. TempleOSRS and Crystal Math Labs are **not** called by the current plugin API clients.
+
+## Gain-source behavior
+
+| Mode | Meaning | Remote request | Local storage |
+| --- | --- | --- | --- |
+| **Tracker APIs (WOM)** | True WOM day/week/month/year gains | Selected player name + selected period | In-memory card cache only |
+| **Official Hiscores delta** | Change since this plugin last scanned that player | Selected player name | Versioned CSV baseline under `.runelite` |
+
+The plugin does not silently present official scan-to-scan differences as weekly or monthly tracker history.
 
 ## Configuration
 
-Most frequently used controls are in the panel itself:
+### Controls in the sidebar
 
-- Source dropdown: Friends Chat, Friends List, or Clan Chat.
-- Lookback dropdown: Day, 7 days, 30 days, or 365 days.
-- Offline checkbox: include or hide offline friends in the Friends List source.
-- Refresh button: rescan social sources and clear cached gain summaries.
+- **Source:** Friends Chat, Friends List, or Clan Chat.
+- **Lookback:** Day, 7 days, 30 days, or 365 days.
+- **Offline:** include or immediately hide offline Friends List rows.
+- **Refresh (`↻`):** rescan social sources and clear cached card summaries.
 
-RuneLite config still includes:
+### RuneLite configuration
 
-- `Show login hint` — toggles the startup chat message.
-- `Activity window (minutes)` — controls login hint summary wording.
-- `Max players shown` — controls login hint wording and tracking summaries.
-- `Track friends list` — discovers players from your friends list.
-- `Track friends chat` — discovers players from your active friends chat.
-- `Track clan chat` — discovers players from your active clan channel.
-- `Max tracked members` — caps the local tracking list for memory/API control.
-- `Refresh interval (minutes)` — controls automatic rescans while logged in.
-- `Gain data source` — chooses `Tracker APIs (WOM)` or `Official Hiscores delta`.
-- `Enable WOM lookups` — controls whether selected-player names are sent to Wise Old Man.
+- **Show login hint:** show or suppress the startup chat message.
+- **Activity window (minutes):** wording used by the login summary.
+- **Max players shown:** cap used by summary/display behavior.
+- **Track friends list:** enable local Friends List discovery.
+- **Track friends chat:** enable local Friends Chat discovery.
+- **Track clan chat:** enable local Clan Channel discovery.
+- **Max tracked members:** cap local tracking state for memory and API control.
+- **Refresh interval (minutes):** frequency of automatic local social rescans while logged in.
+- **Gain data source:** select WOM tracker gains or official hiscores local deltas.
+- **Enable WOM lookups:** when enabled, opening a card in tracker mode sends that selected player name to `wiseoldman.net`.
 
-The lookback and offline-friends values are persisted through config storage but are controlled from the panel UI.
+The lookback and offline controls are stored through RuneLite configuration but intentionally live in the panel because they are frequent actions.
+
+## Privacy and network usage
+
+### What can leave RuneLite
+
+Only after a player card is opened:
+
+- The selected player’s URL-encoded display name.
+- The selected WOM period when WOM mode is active.
+- Standard HTTP metadata such as the user agent and source IP inherent to contacting a public web service.
+
+### What does not leave RuneLite
+
+- Complete friends lists, friends-chat lists, or clan rosters.
+- Membership source or social relationship.
+- Player worlds from the social panel.
+- RuneLite or Jagex credentials, cookies, or authentication tokens.
+- Chat messages, bank, inventory, equipment, or local configuration contents.
+- Analytics, advertising identifiers, crash reports, or custom telemetry.
+
+There is no custom backend, account system, API key, or plugin-operated database. WOM results are cached only in memory. Official baseline files remain local.
+
+## Failure handling
+
+- API work is performed away from the sidebar rendering path.
+- Connection and read timeouts prevent indefinite web requests.
+- WOM HTTP failures return an availability message instead of freezing the panel.
+- Users can explicitly choose official hiscores delta mode; WOM and official-delta semantics are not mixed.
+- A first official scan creates a local baseline instead of claiming historical gains it cannot prove.
+- Malformed official hiscore rows are skipped without discarding every valid row.
+- Social sources that are disabled or not yet available display a clear local state.
 
 ## Project layout
 
 ```text
 src/main/java/com/itmeansbigmountain/whosgrindingclanpanel/
-  WhosGrindingClanPanelPlugin.java   # RuneLite plugin entry point, social source scans, toolbar registration
-  WhosGrindingClanPanelConfig.java   # RuneLite config options
-  WhosGrindingClanPanelPanel.java    # Compact sidebar UI with expandable player rows
-  WiseOldManGainedClient.java        # WOM gained API client and summary formatting
-  OfficialHiscoresGainedClient.java  # Official hiscores scan-to-scan fallback
-  SocialTrackingService.java         # tracked-member merge/cap/ignore/offline-prune service
+├── WhosGrindingClanPanelPlugin.java    RuneLite lifecycle, social scans, toolbar
+├── WhosGrindingClanPanelPanel.java     Compact sidebar and expandable cards
+├── WhosGrindingClanPanelConfig.java    RuneLite configuration
+├── SocialTrackingService.java          Local merge, filter, cap, and sorting
+├── WiseOldManGainedClient.java         WOM period-gain requests and formatting
+├── OfficialHiscoresGainedClient.java   Official scan baselines and deltas
+├── GainsPeriod.java                    Panel-to-WOM period mapping
+└── PlayerTrackingLinks.java            Safe public player-page URLs
+
 src/test/java/com/itmeansbigmountain/whosgrindingclanpanel/
-  *Test.java                         # JUnit coverage for formatting, dimensions, configs, tracking, and WOM summaries
-runelite-plugin.properties           # Plugin Hub metadata
-plugin.json                          # Local metadata descriptor
-build.gradle                         # Java 11 RuneLite build
+└── *Test.java                          UI dimensions, config, tracking, URLs,
+                                        parsing, period mapping, and summaries
 ```
 
-## Requirements
+## Local development
 
-Java 11. In this workspace use:
+Requirements:
+
+- Java 11
+- Included Gradle wrapper
+
+Linux/macOS build:
 
 ```bash
 export JAVA_HOME=/opt/data/jdks/current-java11
 export PATH="$JAVA_HOME/bin:$PATH"
-```
-
-## Build and test
-
-From the repository root:
-
-```bash
 ./gradlew clean test assemble --no-daemon --console=plain
 ```
 
-To launch RuneLite in developer mode with this external plugin loaded:
+Windows build:
 
-```bash
-./gradlew run --no-daemon --console=plain
+```bat
+gradlew.bat clean test assemble --no-daemon --console=plain
 ```
 
-On Windows for this repo:
+Launch RuneLite in developer mode:
 
 ```bat
 gradlew.bat run --no-daemon --console=plain
 ```
 
-Errors-only console on Windows:
+Errors-only Windows console:
 
 ```bat
 gradlew.bat run --no-daemon --console=plain --quiet 1>NUL
@@ -177,39 +258,31 @@ gradlew.bat run --no-daemon --console=plain --quiet 1>NUL
 
 ## Manual RuneLite testing checklist
 
-1. Start the plugin with `gradlew.bat run --no-daemon --console=plain` on Windows or `./gradlew run --no-daemon --console=plain` on Linux.
-2. Confirm RuneLite opens in developer mode and lists `Who's Grinding Panel`.
-3. Log into an account and verify the optional readiness chat message appears.
-4. Confirm Friends List, Friends Chat, and Clan Chat filters show appropriate members or clear empty/unsupported messages.
-5. Confirm the `↻` button is visible next to the current-player row with a small gap.
-6. Toggle offline friends on and verify offline friend rows appear.
-7. Toggle offline friends off and verify cached offline friend rows disappear immediately.
-8. Click a player row and confirm the inline card expands; click again and confirm it collapses.
-9. Confirm the logged-in player appears at the top on every source tab and can be expanded.
-10. Confirm WOM data shows skills, boss KC, and activities line-by-line, with every positive gain shown.
-11. Confirm fallback data is labeled as scan-to-scan official hiscores difference, not WOM weekly/monthly/yearly history.
-12. Switch the panel lookback dropdown to day/7 days/30 days/365 days and confirm the card refreshes using the selected window.
-13. Confirm card width stays within the approved sidebar width and uses vertical space instead of clipping or hiding gains.
+1. Confirm `Who’s Grinding Panel` appears and enables without startup errors.
+2. Confirm the unique navigation icon opens a panel within RuneLite’s standard sidebar width.
+3. Verify Friends List, Friends Chat, and Clan Chat show the correct local members or a clear unavailable state.
+4. Confirm the current account is pinned at the top for every source.
+5. Toggle offline friends on and off; hidden offline rows must disappear immediately.
+6. Open and close a player row; only the opened player should trigger a gain request.
+7. Verify WOM mode shows every positive skill, boss, and activity gain for each period.
+8. Verify a missing/stale WOM player follows update/create → retry without freezing RuneLite.
+9. Verify official mode labels its first scan as a baseline and later scans as differences since the previous plugin scan.
+10. Switch source, period, and data-source controls; cards must refresh with the correct semantics.
+11. Confirm long gain lists remain vertical and readable without horizontal clipping.
+12. Simulate an unavailable API and confirm the panel remains responsive with a useful status.
+13. Confirm disabling WOM lookups prevents WOM card requests.
 
-## External APIs and privacy
-
-Requests occur in a background worker only when a player card is opened and its player/period/source result is not cached.
-
-| Service | Method and route | Data and purpose |
-| --- | --- | --- |
-| Wise Old Man | `GET https://api.wiseoldman.net/v2/players/{name}/gained?period={day|week|month|year}` | Sends the selected URL-encoded player name and period; receives public skill XP, boss KC, and activity-score gains. |
-| Wise Old Man | `POST https://api.wiseoldman.net/v2/players/{name}` | Sends the selected name in the path with no body to request a WOM create/update, then retries the gained lookup after HTTP `200`/`201`. |
-| Jagex hiscores | `GET https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player={name}` | Sends the selected URL-encoded player name; receives public lite CSV used for scan-to-scan XP/KC/score differences. |
-
-No API key, login token, or cookie is used. Requests identify `WhosGrindingPanel RuneLite plugin`. Only the opened player's name is sent; social-list membership, worlds, complete friends/clan lists, and RuneLite credentials are not transmitted. The plugin has no analytics, advertising, crash reporting, or custom telemetry.
-
-WOM results are cached in memory. Handled WOM failures currently show a WOM availability message; users may explicitly select **Official Hiscores delta** rather than relying on an automatic source switch. Jagex baselines are stored locally at `~/.runelite/whos-grinding-hiscores/{normalized-player-name}.csv`, with entries older than about 370 days discarded during rewrites. First scans establish a baseline; request/parsing failures show an unavailable state.
-
-The Wise Old Man, TempleOSRS, and Jagex web-page URLs generated by `PlayerTrackingLinks` are browser destinations, not additional plugin API requests. TempleOSRS and Crystal Math Labs are not called by the current API clients.
-
-## Plugin Hub prep notes
+## Plugin Hub readiness
 
 - Package: `com.itmeansbigmountain.whosgrindingclanpanel`
-- Main plugin class: `WhosGrindingClanPanelPlugin`
-- Display name: `Who's Grinding Panel`
-- Tags: `friends`, `grind`, `skills`, `activity`, `xp`
+- Main class: `WhosGrindingClanPanelPlugin`
+- Display name: `Who’s Grinding Panel`
+- Java target: 11
+- Build mode: standard
+- Root and RuneLite navigation icons use the approved unique Who’s Grinding artwork.
+- Third-party request purpose and transmitted data are documented here and in the WOM configuration description.
+- No credentials, social roster, account session, analytics, or custom telemetry are transmitted.
+
+## Support
+
+Report a bug or request an improvement through the repository’s [GitHub issue tracker](https://github.com/ItMeansBigMountain/whos-grinding-clan-panel-osrs/issues).

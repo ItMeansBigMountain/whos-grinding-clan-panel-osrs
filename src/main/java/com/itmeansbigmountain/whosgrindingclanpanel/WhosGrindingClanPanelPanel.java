@@ -372,7 +372,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	private void ensureGrindingSummaryLoaded(String playerName)
 	{
 		String cacheKey = grindingCacheKey(playerName);
-		if (!config.enableWiseOldManLookups() && config.gainDataSource() != GainDataSource.OFFICIAL_HISCORES)
+		if (!config.enableWiseOldManLookups() && config.gainDataSource() == GainDataSource.TRACKER_APIS)
 		{
 			grindingSummaryCache.put(cacheKey, "WOM lookups<br>are disabled<br>in config.");
 			return;
@@ -436,12 +436,36 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	{
 		try
 		{
-			return gainedClient.fetchGrindingSummary(playerName, config.gainsPeriod());
+			String womResult = gainedClient.fetchGrindingSummary(playerName, config.gainsPeriod());
+			// Also capture official hiscores snapshot in background for fallback history
+			captureOfficialSnapshotAsync(playerName);
+			return womResult;
 		}
-		catch (Exception ignored)
+		catch (Exception ex)
 		{
-			return "WOM gains are<br>not ready yet.";
+			// WOM failed - fall back to official hiscores
+			return dataSection("Fallback: Official OSRS hiscores", fallbackSourceNote(), fetchOfficialSummary(playerName));
 		}
+	}
+
+	private void captureOfficialSnapshotAsync(String playerName)
+	{
+		new SwingWorker<Void, Void>()
+		{
+			@Override
+			protected Void doInBackground() throws Exception
+			{
+				try
+				{
+					hiscoresClient.fetchGrindingSummary(playerName, config.gainsPeriod());
+				}
+				catch (Exception ignored)
+				{
+					// Silent background capture - don't disrupt UI
+				}
+				return null;
+			}
+		}.execute();
 	}
 
 	private String fetchOfficialSummary(String playerName)

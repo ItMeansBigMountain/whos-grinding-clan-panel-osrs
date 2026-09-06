@@ -48,13 +48,52 @@ final class OfficialHiscoresGainedClient
 		HiscoreSnapshot current = new HiscoreSnapshot(Instant.now().getEpochSecond(), currentValues);
 		Path snapshotFile = snapshotFile(normalizedName);
 		List<HiscoreSnapshot> snapshots = readSnapshots(snapshotFile);
-		HiscoreSnapshot baseline = latestSnapshot(snapshots);
+		HiscoreSnapshot baseline = baselineForPeriod(snapshots, period);
 		writeSnapshots(snapshotFile, snapshots, current);
 		if (baseline == null)
 		{
 			return "Fallback baseline<br>saved from official<br>OSRS hiscores.<br>Future fallback gains<br>show the difference<br>from this scan.";
 		}
 		return "Difference since<br>last plugin scan:<br>" + summarizeDelta(current.values, baseline.values);
+	}
+
+	private static HiscoreSnapshot baselineForPeriod(List<HiscoreSnapshot> snapshots, GainsPeriod period)
+	{
+		if (snapshots.isEmpty())
+		{
+			return null;
+		}
+		long now = Instant.now().getEpochSecond();
+		long targetAgeSeconds = (long) period.days() * 86400L;
+		long targetTimestamp = now - targetAgeSeconds;
+		
+		// Find the snapshot closest to but not after the target period
+		HiscoreSnapshot best = null;
+		long bestDiff = Long.MAX_VALUE;
+		for (HiscoreSnapshot snapshot : snapshots)
+		{
+			if (snapshot.timestamp <= targetTimestamp)
+			{
+				long diff = targetTimestamp - snapshot.timestamp;
+				if (diff < bestDiff)
+				{
+					bestDiff = diff;
+					best = snapshot;
+				}
+			}
+		}
+		// If no snapshot at or before target, fall back to latest available
+		if (best == null)
+		{
+			best = latestSnapshot(snapshots);
+		}
+		return best;
+	}
+
+	// Package-private for testing
+	static HiscoreSnapshot testBaselineForPeriod(List<HiscoreSnapshot> snapshots, GainsPeriod period)
+	{
+		return baselineForPeriod(snapshots, period);
 	}
 
 	static String summarizeDelta(HiscoreValues current, HiscoreValues baseline)
@@ -266,7 +305,7 @@ final class OfficialHiscoresGainedClient
 		}
 	}
 
-	private static final class HiscoreSnapshot
+	static final class HiscoreSnapshot
 	{
 		private final long timestamp;
 		private final HiscoreValues values;
@@ -281,6 +320,18 @@ final class OfficialHiscoresGainedClient
 		{
 			return timestamp + "," + values.serialize();
 		}
+
+		// Package-private for testing
+		long testTimestamp()
+		{
+			return timestamp;
+		}
+	}
+
+	// Package-private for testing
+	static List<HiscoreSnapshot> testReadSnapshots(Path path) throws IOException
+	{
+		return readSnapshots(path);
 	}
 
 	private static final class GainedLine

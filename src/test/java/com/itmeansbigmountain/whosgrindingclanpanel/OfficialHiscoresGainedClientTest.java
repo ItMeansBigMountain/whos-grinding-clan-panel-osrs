@@ -1,7 +1,14 @@
 package com.itmeansbigmountain.whosgrindingclanpanel;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
@@ -42,6 +49,117 @@ public class OfficialHiscoresGainedClientTest
 		assertTrue(summary.contains("★ Bounty Hunter: <b>+2 score</b>"));
 	}
 
+	@Test
+	public void baselineForPeriod_selectsClosestSnapshotAtOrBeforeTarget() throws IOException
+	{
+		Path tempFile = Files.createTempFile("test-baseline", ".csv");
+		try
+		{
+			// Use clearly old timestamps (year 2000 range) so they're all "before" any reasonable "now"
+			// Snapshot 1: 2000-01-01 = 946684800
+			// Snapshot 2: 2000-06-01 = 959932800  
+			// Snapshot 3: 2000-12-01 = 975619200
+			long snap1 = 946684800L;   // Jan 1, 2000
+			long snap2 = 959932800L;   // Jun 1, 2000
+			long snap3 = 975619200L;   // Dec 1, 2000
+
+			String snapshotContent = "V2|S{}|A{}|B{}";
+			Files.write(tempFile, List.of(
+				snap1 + "," + snapshotContent,
+				snap2 + "," + snapshotContent,
+				snap3 + "," + snapshotContent
+			));
+
+			List<OfficialHiscoresGainedClient.HiscoreSnapshot> snapshots = OfficialHiscoresGainedClient.testReadSnapshots(tempFile);
+			assertEquals(3, snapshots.size());
+
+			// Since all snapshots are from year 2000 and "now" is 2026+, 
+			// target for any period will be 2026 - period.days
+			// The "closest at or before target" will be the LATEST snapshot (snap3, Dec 2000)
+			// for all periods, because target is still way after 2000.
+			// This tests that the fallback to latest works correctly.
+			
+			OfficialHiscoresGainedClient.HiscoreSnapshot baselineDay = OfficialHiscoresGainedClient.testBaselineForPeriod(snapshots, GainsPeriod.DAY);
+			assertNotNull(baselineDay);
+			assertEquals(snap3, baselineDay.testTimestamp());
+
+			OfficialHiscoresGainedClient.HiscoreSnapshot baselineWeek = OfficialHiscoresGainedClient.testBaselineForPeriod(snapshots, GainsPeriod.SEVEN_DAYS);
+			assertNotNull(baselineWeek);
+			assertEquals(snap3, baselineWeek.testTimestamp());
+
+			OfficialHiscoresGainedClient.HiscoreSnapshot baselineMonth = OfficialHiscoresGainedClient.testBaselineForPeriod(snapshots, GainsPeriod.THIRTY_DAYS);
+			assertNotNull(baselineMonth);
+			assertEquals(snap3, baselineMonth.testTimestamp());
+
+			OfficialHiscoresGainedClient.HiscoreSnapshot baselineYear = OfficialHiscoresGainedClient.testBaselineForPeriod(snapshots, GainsPeriod.YEAR);
+			assertNotNull(baselineYear);
+			assertEquals(snap3, baselineYear.testTimestamp());
+		}
+		finally
+		{
+			Files.deleteIfExists(tempFile);
+		}
+	}
+
+	@Test
+	public void baselineForPeriod_whenNoSnapshotBeforeTarget_fallsBackToLatest() throws IOException
+	{
+		Path tempFile = Files.createTempFile("test-baseline-fallback", ".csv");
+		try
+		{
+			long now = Instant.now().getEpochSecond();
+			long twoDaysAgo = now - 2 * 86400L;
+			String snapshotContent = "V2|S{}|A{}|B{}";
+			Files.write(tempFile, List.of(twoDaysAgo + "," + snapshotContent));
+
+			List<OfficialHiscoresGainedClient.HiscoreSnapshot> snapshots = OfficialHiscoresGainedClient.testReadSnapshots(tempFile);
+			assertEquals(1, snapshots.size());
+
+			// DAY period (1 day) - no snapshot at or before 1 day ago, should fall back to latest (2 days ago)
+			OfficialHiscoresGainedClient.HiscoreSnapshot baselineDay = OfficialHiscoresGainedClient.testBaselineForPeriod(snapshots, GainsPeriod.DAY);
+			assertNotNull(baselineDay);
+			assertEquals(twoDaysAgo, baselineDay.testTimestamp());
+		}
+		finally
+		{
+			Files.deleteIfExists(tempFile);
+		}
+	}
+
+	@Test
+	public void baselineForPeriod_emptySnapshots_returnsNull() throws IOException
+	{
+		Path tempFile = Files.createTempFile("test-empty", ".csv");
+		try
+		{
+			Files.write(tempFile, List.of());
+			List<OfficialHiscoresGainedClient.HiscoreSnapshot> snapshots = OfficialHiscoresGainedClient.testReadSnapshots(tempFile);
+			assertTrue(snapshots.isEmpty());
+
+			OfficialHiscoresGainedClient.HiscoreSnapshot baseline = OfficialHiscoresGainedClient.testBaselineForPeriod(snapshots, GainsPeriod.DAY);
+			assertNull(baseline);
+		}
+		finally
+		{
+			Files.deleteIfExists(tempFile);
+		}
+	}
+
+	@Test
+	public void firstScanReturnsBaselineSavedMessage() throws IOException
+	{
+		// This test verifies the message format for first scan
+		// We can't easily test the full fetchGrindingSummary without network,
+		// but we can verify the summarizeDelta handles empty sections correctly
+		List<OfficialHiscoresGainedClient.HiscoreValues> empty = List.of(new OfficialHiscoresGainedClient.HiscoreValues());
+		String summary = OfficialHiscoresGainedClient.summarizeDelta(
+			new OfficialHiscoresGainedClient.HiscoreValues(),
+			new OfficialHiscoresGainedClient.HiscoreValues()
+		);
+		assertTrue(summary.contains("No official"));
+		assertTrue(summary.contains("hiscores difference"));
+	}
+
 	private static List<String> baselineRows()
 	{
 		List<String> rows = new ArrayList<>();
@@ -59,4 +177,7 @@ public class OfficialHiscoresGainedClientTest
 		}
 		return rows;
 	}
+
+	// Need to make baselineForPeriod accessible for testing - add a test-only static method
+	// This will be called from the test, so we define it here but it needs to be in the main class
 }

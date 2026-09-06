@@ -9,6 +9,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -18,8 +20,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-final class OfficialHiscoresGainedClient
+final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 {
+	interface HiscoresFetcher
+	{
+		HiscoreValues fetch(String playerName) throws IOException;
+	}
+
 	private static final String HISCORES_URL = "https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=";
 	private static final String[] SKILLS = {
 		"Overall", "Attack", "Defence", "Strength", "Hitpoints", "Ranged", "Prayer", "Magic", "Cooking", "Woodcutting",
@@ -40,15 +47,35 @@ final class OfficialHiscoresGainedClient
 		"Gauntlet", "CG", "Huey", "Levi", "Royal Titans", "Whisperer", "ToB", "HMT", "Thermy", "ToA", "ToA Expert",
 		"TzKal-Zuk", "TzTok-Jad", "Vard", "Venenatis", "Vet'ion", "Vorkath", "Wintertodt", "Yama", "Zalc", "Zulrah"
 	};
+	private final Path snapshotDirectory;
+	private final Clock clock;
+	private final HiscoresFetcher fetcher;
 
-	String fetchGrindingSummary(String playerName, GainsPeriod period) throws IOException
+	OfficialHiscoresGainedClient()
+	{
+		this(
+			Paths.get(System.getProperty("user.home"), ".runelite", "whos-grinding-hiscores"),
+			Clock.systemUTC(),
+			OfficialHiscoresGainedClient::fetchCurrentValues
+		);
+	}
+
+	OfficialHiscoresGainedClient(Path snapshotDirectory, Clock clock, HiscoresFetcher fetcher)
+	{
+		this.snapshotDirectory = snapshotDirectory;
+		this.clock = clock;
+		this.fetcher = fetcher;
+	}
+
+	@Override
+	public synchronized String fetchGrindingSummary(String playerName, GainsPeriod period) throws IOException
 	{
 		String normalizedName = WhosGrindingClanPanelPlugin.normalizePlayerName(playerName);
-		HiscoreValues currentValues = fetchCurrentValues(normalizedName);
-		HiscoreSnapshot current = new HiscoreSnapshot(Instant.now().getEpochSecond(), currentValues);
-		Path snapshotFile = snapshotFile(normalizedName);
+		HiscoreValues currentValues = fetcher.fetch(normalizedName);
+		HiscoreSnapshot current = new HiscoreSnapshot(clock.instant().getEpochSecond(), currentValues);
+		Path snapshotFile = snapshotFileFor(normalizedName);
 		List<HiscoreSnapshot> snapshots = readSnapshots(snapshotFile);
-		HiscoreSnapshot baseline = baselineForPeriod(snapshots, period);
+		HiscoreSnapshot baseline = baselineForPeriod(snapshots, period, clock);
 		writeSnapshots(snapshotFile, snapshots, current);
 		if (baseline == null)
 		{
@@ -57,14 +84,15 @@ final class OfficialHiscoresGainedClient
 		return "Difference since<br>last plugin scan:<br>" + summarizeDelta(current.values, baseline.values);
 	}
 
-	private static HiscoreSnapshot baselineForPeriod(List<HiscoreSnapshot> snapshots, GainsPeriod period)
+	private static HiscoreSnapshot baselineForPeriod(List<HiscoreSnapshot> snapshots, GainsPeriod period, Clock clock)
 	{
 		if (snapshots.isEmpty())
 		{
 			return null;
 		}
-		long now = Instant.now().getEpochSecond();
-		long targetAgeSeconds = (long) period.days() * 86400L;
+		long now = clock.instant().getEpochSecond();
+		GainsPeriod safePeriod = period == null ? GainsPeriod.SEVEN_DAYS : period;
+		long targetAgeSeconds = (long) safePeriod.days() * 86400L;
 		long targetTimestamp = now - targetAgeSeconds;
 		
 		// Find the snapshot closest to but not after the target period
@@ -93,7 +121,12 @@ final class OfficialHiscoresGainedClient
 	// Package-private for testing
 	static HiscoreSnapshot testBaselineForPeriod(List<HiscoreSnapshot> snapshots, GainsPeriod period)
 	{
-		return baselineForPeriod(snapshots, period);
+		return baselineForPeriod(snapshots, period, Clock.systemUTC());
+	}
+
+	static HiscoreSnapshot testBaselineForPeriod(List<HiscoreSnapshot> snapshots, GainsPeriod period, Clock clock)
+	{
+		return baselineForPeriod(snapshots, period, clock);
 	}
 
 	static String summarizeDelta(HiscoreValues current, HiscoreValues baseline)
@@ -185,10 +218,10 @@ final class OfficialHiscoresGainedClient
 		return row;
 	}
 
-	private static Path snapshotFile(String playerName)
+	Path snapshotFileFor(String playerName)
 	{
 		String safeName = TrackedMember.normalizeKey(playerName).replaceAll("[^a-z0-9_-]", "_");
-		return Paths.get(System.getProperty("user.home"), ".runelite", "whos-grinding-hiscores", safeName + ".csv");
+		return snapshotDirectory.resolve(safeName + ".csv");
 	}
 
 	private static List<HiscoreSnapshot> readSnapshots(Path path) throws IOException
@@ -205,10 +238,17 @@ final class OfficialHiscoresGainedClient
 			{
 				continue;
 			}
-			HiscoreValues values = HiscoreValues.deserialize(parts[1]);
-			if (values != null)
+			try
 			{
-				snapshots.add(new HiscoreSnapshot(Long.parseLong(parts[0]), values));
+				HiscoreValues values = HiscoreValues.deserialize(parts[1]);
+				if (values != null)
+				{
+					snapshots.add(new HiscoreSnapshot(Long.parseLong(parts[0]), values));
+				}
+			}
+			catch (NumberFormatException ignored)
+			{
+				// A partial/corrupt line must not hide otherwise valid history.
 			}
 		}
 		return snapshots;
@@ -232,7 +272,16 @@ final class OfficialHiscoresGainedClient
 			}
 		}
 		lines.add(current.serialize());
-		Files.write(path, lines, StandardCharsets.UTF_8);
+		Path temporary = Files.createTempFile(path.getParent(), path.getFileName().toString(), ".tmp");
+		Files.write(temporary, lines, StandardCharsets.UTF_8);
+		try
+		{
+			Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+		}
+		catch (java.nio.file.AtomicMoveNotSupportedException ignored)
+		{
+			Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
+		}
 	}
 
 	private static String formatNumber(long value)
@@ -332,6 +381,11 @@ final class OfficialHiscoresGainedClient
 	static List<HiscoreSnapshot> testReadSnapshots(Path path) throws IOException
 	{
 		return readSnapshots(path);
+	}
+
+	static HiscoreSnapshot testSnapshot(long timestamp)
+	{
+		return new HiscoreSnapshot(timestamp, new HiscoreValues());
 	}
 
 	private static final class GainedLine

@@ -8,13 +8,81 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
 
 public class OfficialHiscoresGainedClientTest
 {
+	@Test
+	public void firstAndSecondScansPersistSanitizedIdentityAndRenderDeltas() throws IOException
+	{
+		Path cache = Files.createTempDirectory("hiscores-cache");
+		Instant first = Instant.parse("2026-09-01T00:00:00Z");
+		List<String> currentRows = new ArrayList<>(baselineRows());
+		OfficialHiscoresGainedClient firstClient = new OfficialHiscoresGainedClient(
+			cache,
+			Clock.fixed(first, ZoneOffset.UTC),
+			ignored -> OfficialHiscoresGainedClient.parseLiteCsv(baselineRows())
+		);
+
+		String baselineMessage = firstClient.fetchGrindingSummary("  Test Player!?  ", GainsPeriod.DAY);
+
+		assertTrue(baselineMessage.contains("baseline"));
+		Path snapshot = firstClient.snapshotFileFor("Test Player!?");
+		assertEquals(cache.resolve("test_player__.csv"), snapshot);
+		assertTrue(Files.isRegularFile(snapshot));
+
+		currentRows.set(1, "1,2,250");
+		currentRows.set(25 + 10, "1,9");
+		currentRows.set(25 + 16 + 69, "1,4");
+		OfficialHiscoresGainedClient secondClient = new OfficialHiscoresGainedClient(
+			cache,
+			Clock.fixed(first.plusSeconds(60), ZoneOffset.UTC),
+			ignored -> OfficialHiscoresGainedClient.parseLiteCsv(currentRows)
+		);
+
+		String delta = secondClient.fetchGrindingSummary("test_player!?", GainsPeriod.DAY);
+
+		assertTrue(delta.contains("Attack: <b>+250 xp</b>"));
+		assertTrue(delta.contains("LMS: <b>+9 score</b>"));
+		assertTrue(delta.contains("Zulrah: <b>+4 kc</b>"));
+		assertEquals(2, OfficialHiscoresGainedClient.testReadSnapshots(snapshot).size());
+	}
+
+	@Test
+	public void baselineSelectionUsesInjectedClockAndClosestSnapshotBeforeTarget() throws IOException
+	{
+		Instant now = Instant.parse("2026-09-08T00:00:00Z");
+		List<OfficialHiscoresGainedClient.HiscoreSnapshot> snapshots = List.of(
+			OfficialHiscoresGainedClient.testSnapshot(now.minusSeconds(10 * 86400L).getEpochSecond()),
+			OfficialHiscoresGainedClient.testSnapshot(now.minusSeconds(8 * 86400L).getEpochSecond()),
+			OfficialHiscoresGainedClient.testSnapshot(now.minusSeconds(6 * 86400L).getEpochSecond())
+		);
+
+		OfficialHiscoresGainedClient.HiscoreSnapshot selected = OfficialHiscoresGainedClient.testBaselineForPeriod(
+			snapshots,
+			GainsPeriod.SEVEN_DAYS,
+			Clock.fixed(now, ZoneOffset.UTC)
+		);
+
+		assertEquals(now.minusSeconds(8 * 86400L).getEpochSecond(), selected.testTimestamp());
+	}
+
+	@Test
+	public void malformedSnapshotLinesAreIgnoredWithoutLosingValidHistory() throws IOException
+	{
+		Path snapshot = Files.createTempFile("hiscores-corrupt", ".csv");
+		Files.write(snapshot, List.of("not-a-time,V2|S{}|A{}|B{}", "100,V2|S{Attack=1}|A{}|B{}"));
+
+		List<OfficialHiscoresGainedClient.HiscoreSnapshot> loaded = OfficialHiscoresGainedClient.testReadSnapshots(snapshot);
+
+		assertEquals(1, loaded.size());
+		assertEquals(100L, loaded.get(0).testTimestamp());
+	}
 	@Test
 	public void summarizesOfficialHiscoreSkillBossAndActivityDeltas()
 	{

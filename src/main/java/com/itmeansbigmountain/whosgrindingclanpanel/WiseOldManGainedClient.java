@@ -15,11 +15,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
-final class WiseOldManGainedClient
+final class WiseOldManGainedClient implements GrindingSummaryClient
 {
 	private static final String API_BASE_URL = "https://api.wiseoldman.net/v2/players/";
 
-	String fetchGrindingSummary(String playerName, GainsPeriod period) throws IOException
+	@Override
+	public String fetchGrindingSummary(String playerName, GainsPeriod period) throws IOException
 	{
 		String normalizedName = WhosGrindingClanPanelPlugin.normalizePlayerName(playerName);
 		GainsPeriod safePeriod = period == null ? GainsPeriod.SEVEN_DAYS : period;

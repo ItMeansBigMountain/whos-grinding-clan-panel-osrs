@@ -12,6 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -44,8 +45,9 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	private final JPanel content = new JPanel();
 	private final WhosGrindingClanPanelConfig config;
 	private final PanelActions actions;
-	private final WiseOldManGainedClient gainedClient = new WiseOldManGainedClient();
-	private final OfficialHiscoresGainedClient hiscoresClient = new OfficialHiscoresGainedClient();
+	private final GrindingSummaryClient gainedClient;
+	private final GrindingSummaryClient hiscoresClient;
+	private final Executor snapshotExecutor;
 	private final Map<String, String> grindingSummaryCache = new ConcurrentHashMap<>();
 	private SocialTrackerState state;
 	private SocialSourceFilter filter = SocialSourceFilter.FRIENDS_CHAT;
@@ -53,10 +55,32 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 	WhosGrindingClanPanelPanel(WhosGrindingClanPanelConfig config, SocialTrackerState state, PanelActions actions)
 	{
+		this(config, state, actions, new WiseOldManGainedClient(), new OfficialHiscoresGainedClient(), command -> new SwingWorker<Void, Void>()
+		{
+			@Override
+			protected Void doInBackground()
+			{
+				command.run();
+				return null;
+			}
+		}.execute());
+	}
+
+	WhosGrindingClanPanelPanel(
+		WhosGrindingClanPanelConfig config,
+		SocialTrackerState state,
+		PanelActions actions,
+		GrindingSummaryClient gainedClient,
+		GrindingSummaryClient hiscoresClient,
+		Executor snapshotExecutor)
+	{
 		super(false);
 		this.config = config;
 		this.state = state;
 		this.actions = actions;
+		this.gainedClient = gainedClient;
+		this.hiscoresClient = hiscoresClient;
+		this.snapshotExecutor = snapshotExecutor;
 
 		setLayout(new BorderLayout());
 		content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
@@ -399,7 +423,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 				}
 				catch (Exception ex)
 				{
-					grindingSummaryCache.put(cacheKey, dataSection("Fallback: Official OSRS hiscores", fallbackSourceNote(), fetchOfficialSummary(playerName)));
+					grindingSummaryCache.put(cacheKey, dataSection("Official fallback", fallbackSourceNote(), fetchOfficialSummary(playerName)));
 				}
 				rebuild();
 			}
@@ -410,14 +434,19 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	{
 		if (config.gainDataSource() == GainDataSource.OFFICIAL_HISCORES)
 		{
-			return dataSection("Fallback: Official OSRS hiscores", fallbackSourceNote(), fetchOfficialSummary(playerName));
+			return dataSection("Official fallback", fallbackSourceNote(), fetchOfficialSummary(playerName));
 		}
-		return dataSection("Tracker API: Wise Old Man", "Weekly/monthly/yearly tracker period", fetchWomSummary(playerName));
+		return fetchWomSummary(playerName);
+	}
+
+	String testFetchConfiguredSummary(String playerName)
+	{
+		return fetchConfiguredSummary(playerName);
 	}
 
 	private String fallbackSourceNote()
 	{
-		return "Difference between current scan and last plugin scan. Tracker periods come from WOM. Other fallback APIs checked/planned: TempleOSRS, Crystal Math Labs, official OSRS hiscores.";
+		return "Saved official snapshot";
 	}
 
 	private String separator()
@@ -437,35 +466,40 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		try
 		{
 			String womResult = gainedClient.fetchGrindingSummary(playerName, config.gainsPeriod());
-			// Also capture official hiscores snapshot in background for fallback history
-			captureOfficialSnapshotAsync(playerName);
-			return womResult;
+			if (hasPositiveGains(womResult))
+			{
+				// Explicit player scans also build fallback history without polling the social list.
+				captureOfficialSnapshotAsync(playerName);
+				return dataSection("Tracker API: Wise Old Man", "Gains for the selected period", womResult);
+			}
+			return dataSection("Official fallback", fallbackSourceNote(), fetchOfficialSummary(playerName));
 		}
 		catch (Exception ex)
 		{
 			// WOM failed - fall back to official hiscores
-			return dataSection("Fallback: Official OSRS hiscores", fallbackSourceNote(), fetchOfficialSummary(playerName));
+			return dataSection("Official fallback", fallbackSourceNote(), fetchOfficialSummary(playerName));
 		}
+	}
+
+	private static boolean hasPositiveGains(String summary)
+	{
+		return summary != null
+			&& !summary.startsWith("No recent gains")
+			&& !summary.startsWith("Player not on");
 	}
 
 	private void captureOfficialSnapshotAsync(String playerName)
 	{
-		new SwingWorker<Void, Void>()
-		{
-			@Override
-			protected Void doInBackground() throws Exception
+		snapshotExecutor.execute(() -> {
+			try
 			{
-				try
-				{
-					hiscoresClient.fetchGrindingSummary(playerName, config.gainsPeriod());
-				}
-				catch (Exception ignored)
-				{
-					// Silent background capture - don't disrupt UI
-				}
-				return null;
+				hiscoresClient.fetchGrindingSummary(playerName, config.gainsPeriod());
 			}
-		}.execute();
+			catch (Exception ignored)
+			{
+				// Optional history capture must not replace valid WOM data.
+			}
+		});
 	}
 
 	private String fetchOfficialSummary(String playerName)
@@ -476,7 +510,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		}
 		catch (Exception ignored)
 		{
-			return "Official hiscores<br>not available yet.";
+			return "Official hiscores unavailable.<br>No gains were changed or invented.<br>Try another scan later.";
 		}
 	}
 

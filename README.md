@@ -1,3 +1,5 @@
+[Support development on Buy Me a Coffee](https://buymeacoffee.com/affanfareev).
+
 # Who’s Grinding Panel
 
 <div align="center">

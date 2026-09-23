@@ -125,7 +125,7 @@ public class OfficialHiscoresGainedClientTest
 		{
 			// Use clearly old timestamps (year 2000 range) so they're all "before" any reasonable "now"
 			// Snapshot 1: 2000-01-01 = 946684800
-			// Snapshot 2: 2000-06-01 = 959932800  
+			// Snapshot 2: 2000-06-01 = 959932800
 			// Snapshot 3: 2000-12-01 = 975619200
 			long snap1 = 946684800L;   // Jan 1, 2000
 			long snap2 = 959932800L;   // Jun 1, 2000
@@ -141,12 +141,12 @@ public class OfficialHiscoresGainedClientTest
 			List<OfficialHiscoresGainedClient.HiscoreSnapshot> snapshots = OfficialHiscoresGainedClient.testReadSnapshots(tempFile);
 			assertEquals(3, snapshots.size());
 
-			// Since all snapshots are from year 2000 and "now" is 2026+, 
+			// Since all snapshots are from year 2000 and "now" is 2026+,
 			// target for any period will be 2026 - period.days
 			// The "closest at or before target" will be the LATEST snapshot (snap3, Dec 2000)
 			// for all periods, because target is still way after 2000.
 			// This tests that the fallback to latest works correctly.
-			
+
 			OfficialHiscoresGainedClient.HiscoreSnapshot baselineDay = OfficialHiscoresGainedClient.testBaselineForPeriod(snapshots, GainsPeriod.DAY);
 			assertNotNull(baselineDay);
 			assertEquals(snap3, baselineDay.testTimestamp());

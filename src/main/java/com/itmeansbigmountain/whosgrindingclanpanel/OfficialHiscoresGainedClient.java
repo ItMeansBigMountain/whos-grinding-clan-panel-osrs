@@ -94,7 +94,7 @@ final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 		GainsPeriod safePeriod = period == null ? GainsPeriod.SEVEN_DAYS : period;
 		long targetAgeSeconds = (long) safePeriod.days() * 86400L;
 		long targetTimestamp = now - targetAgeSeconds;
-		
+
 		// Find the snapshot closest to but not after the target period
 		HiscoreSnapshot best = null;
 		long bestDiff = Long.MAX_VALUE;

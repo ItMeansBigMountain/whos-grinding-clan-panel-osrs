@@ -25,6 +25,7 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingWorker;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
+import okhttp3.OkHttpClient;
 
 class WhosGrindingClanPanelPanel extends PluginPanel
 {
@@ -53,9 +54,9 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	private SocialSourceFilter filter = SocialSourceFilter.FRIENDS_CHAT;
 	private String selectedPlayerName;
 
-	WhosGrindingClanPanelPanel(WhosGrindingClanPanelConfig config, SocialTrackerState state, PanelActions actions)
+	WhosGrindingClanPanelPanel(WhosGrindingClanPanelConfig config, SocialTrackerState state, PanelActions actions, OkHttpClient httpClient)
 	{
-		this(config, state, actions, new WiseOldManGainedClient(), new OfficialHiscoresGainedClient(), command -> new SwingWorker<Void, Void>()
+		this(config, state, actions, new WiseOldManGainedClient(httpClient), new OfficialHiscoresGainedClient(httpClient), command -> new SwingWorker<Void, Void>()
 		{
 			@Override
 			protected Void doInBackground()

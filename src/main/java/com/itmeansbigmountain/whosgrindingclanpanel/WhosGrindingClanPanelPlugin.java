@@ -30,6 +30,7 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
+import okhttp3.OkHttpClient;
 
 @Slf4j
 @PluginDescriptor(
@@ -58,6 +59,9 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 
 	@Inject
 	private ClientToolbar clientToolbar;
+
+	@Inject
+	private OkHttpClient httpClient;
 
 	private WhosGrindingClanPanelPanel panel;
 	private NavigationButton navButton;
@@ -100,7 +104,7 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 				rescanSocialSources("show offline friends changed");
 				refreshPanel();
 			}
-		});
+		}, httpClient);
 		navButton = NavigationButton.builder()
 			.tooltip(PLUGIN_NAME)
 			.icon(buildNavigationIcon())

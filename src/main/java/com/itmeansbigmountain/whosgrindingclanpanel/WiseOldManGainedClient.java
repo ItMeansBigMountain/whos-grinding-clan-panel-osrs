@@ -3,21 +3,28 @@ package com.itmeansbigmountain.whosgrindingclanpanel;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 final class WiseOldManGainedClient implements GrindingSummaryClient
 {
 	private static final String API_BASE_URL = "https://api.wiseoldman.net/v2/players/";
+	private static final MediaType JSON = MediaType.parse("application/json");
+	private final OkHttpClient httpClient;
+
+	WiseOldManGainedClient(OkHttpClient httpClient)
+	{
+		this.httpClient = httpClient;
+	}
 
 	@Override
 	public String fetchGrindingSummary(String playerName, GainsPeriod period) throws IOException
@@ -47,27 +54,20 @@ final class WiseOldManGainedClient implements GrindingSummaryClient
 		return API_BASE_URL + PlayerTrackingLinks.urlEncode(normalizedName) + "/gained?period=" + period.wiseOldManPeriod();
 	}
 
-	private static HttpResult request(String method, String url) throws IOException
+	private HttpResult request(String method, String url) throws IOException
 	{
-		HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-		connection.setRequestMethod(method);
-		connection.setConnectTimeout(3500);
-		connection.setReadTimeout(5000);
-		connection.setRequestProperty("User-Agent", "WhosGrindingPanel RuneLite plugin");
-		connection.setRequestProperty("Accept", "application/json");
-		int responseCode = connection.getResponseCode();
-		BufferedReader reader = new BufferedReader(new InputStreamReader(
-			responseCode >= 200 && responseCode < 400 ? connection.getInputStream() : connection.getErrorStream(),
-			StandardCharsets.UTF_8));
-		try (BufferedReader closeableReader = reader)
+		Request.Builder request = new Request.Builder()
+			.url(url)
+			.header("User-Agent", "WhosGrindingPanel RuneLite plugin")
+			.header("Accept", "application/json");
+		if ("POST".equals(method))
 		{
-			StringBuilder body = new StringBuilder();
-			String line;
-			while ((line = closeableReader.readLine()) != null)
-			{
-				body.append(line);
-			}
-			return new HttpResult(responseCode, body.toString());
+			request.post(RequestBody.create(JSON, new byte[0]));
+		}
+		try (Response response = httpClient.newCall(request.build()).execute())
+		{
+			String body = response.body() == null ? "" : response.body().string();
+			return new HttpResult(response.code(), body);
 		}
 	}
 

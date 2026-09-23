@@ -1,10 +1,6 @@
 package com.itmeansbigmountain.whosgrindingclanpanel;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,6 +15,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 {
@@ -51,12 +50,12 @@ final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 	private final Clock clock;
 	private final HiscoresFetcher fetcher;
 
-	OfficialHiscoresGainedClient()
+	OfficialHiscoresGainedClient(OkHttpClient httpClient)
 	{
 		this(
 			Paths.get(System.getProperty("user.home"), ".runelite", "whos-grinding-hiscores"),
 			Clock.systemUTC(),
-			OfficialHiscoresGainedClient::fetchCurrentValues
+			playerName -> fetchCurrentValues(httpClient, playerName)
 		);
 	}
 
@@ -160,21 +159,23 @@ final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 		}
 	}
 
-	private static HiscoreValues fetchCurrentValues(String playerName) throws IOException
+	private static HiscoreValues fetchCurrentValues(OkHttpClient httpClient, String playerName) throws IOException
 	{
-		HttpURLConnection connection = (HttpURLConnection) new URL(HISCORES_URL + PlayerTrackingLinks.urlEncode(playerName)).openConnection();
-		connection.setRequestMethod("GET");
-		connection.setConnectTimeout(3500);
-		connection.setReadTimeout(5000);
-		connection.setRequestProperty("User-Agent", "WhosGrindingPanel RuneLite plugin");
-		int responseCode = connection.getResponseCode();
-		if (responseCode != 200)
+		Request request = new Request.Builder()
+			.url(HISCORES_URL + PlayerTrackingLinks.urlEncode(playerName))
+			.header("User-Agent", "WhosGrindingPanel RuneLite plugin")
+			.build();
+		try (Response response = httpClient.newCall(request).execute())
 		{
-			throw new IOException("Official hiscores returned HTTP " + responseCode);
-		}
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8)))
-		{
-			return parseLiteCsv(reader.lines().collect(Collectors.toList()));
+			if (!response.isSuccessful())
+			{
+				throw new IOException("Official hiscores returned HTTP " + response.code());
+			}
+			if (response.body() == null)
+			{
+				throw new IOException("Official hiscores returned an empty response");
+			}
+			return parseLiteCsv(java.util.Arrays.asList(response.body().string().split("\\R")));
 		}
 	}
 

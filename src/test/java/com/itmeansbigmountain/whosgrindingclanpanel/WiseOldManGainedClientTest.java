@@ -47,4 +47,25 @@ public class WiseOldManGainedClientTest
 
 		assertEquals("No recent gains<br>found. WOM tracking<br>was started/updated if<br>needed. Try 30/365<br>days or check<br>again after XP/KC<br>changes.", WiseOldManGainedClient.summarizeGains(json));
 	}
+
+	@Test
+	public void classifiesValidNoGainResponseWithoutClaimingPlayerIsUntracked()
+	{
+		GrindingSummaryOutcome outcome = WiseOldManGainedClient.classifyForTest(
+			200,
+			"{\"data\":{\"skills\":{},\"bosses\":{},\"activities\":{}}}"
+		);
+
+		assertEquals(GrindingSummaryOutcome.Status.NO_POSITIVE_GAINS, outcome.status());
+		assertTrue(outcome.summary().startsWith("No recent gains"));
+	}
+
+	@Test
+	public void classifiesTransportAndMalformedPayloadSeparately()
+	{
+		assertEquals(GrindingSummaryOutcome.Status.RATE_LIMITED,
+			WiseOldManGainedClient.classifyForTest(429, "").status());
+		assertEquals(GrindingSummaryOutcome.Status.PARSE_ERROR,
+			WiseOldManGainedClient.classifyForTest(200, "not-json").status());
+	}
 }

@@ -83,6 +83,13 @@ public class OfficialHiscoresGainedClientTest
 		assertEquals(1, loaded.size());
 		assertEquals(100L, loaded.get(0).testTimestamp());
 	}
+
+	@Test(expected = IOException.class)
+	public void rejectsTruncatedLiveSchemaInsteadOfSilentlyShiftingRows() throws IOException
+	{
+		OfficialHiscoresGainedClient.parseLiteCsvChecked(baselineRows().subList(0, 40));
+	}
+
 	@Test
 	public void summarizesOfficialHiscoreSkillBossAndActivityDeltas()
 	{

@@ -175,8 +175,18 @@ final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 			{
 				throw new IOException("Official hiscores returned an empty response");
 			}
-			return parseLiteCsv(java.util.Arrays.asList(response.body().string().split("\\R")));
+			return parseLiteCsvChecked(java.util.Arrays.asList(response.body().string().split("\\R")));
 		}
+	}
+
+	static HiscoreValues parseLiteCsvChecked(List<String> rows) throws IOException
+	{
+		int expectedRows = SKILLS.length + ACTIVITIES.length + BOSSES.length;
+		if (rows.size() < expectedRows)
+		{
+			throw new IOException("Official hiscores schema incomplete: expected at least " + expectedRows + " rows, got " + rows.size());
+		}
+		return parseLiteCsv(rows);
 	}
 
 	static HiscoreValues parseLiteCsv(List<String> rows)

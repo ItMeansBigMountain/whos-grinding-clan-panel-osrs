@@ -29,24 +29,61 @@ final class WiseOldManGainedClient implements GrindingSummaryClient
 	@Override
 	public String fetchGrindingSummary(String playerName, GainsPeriod period) throws IOException
 	{
+		return fetchOutcome(playerName, period).summary();
+	}
+
+	@Override
+	public GrindingSummaryOutcome fetchOutcome(String playerName, GainsPeriod period) throws IOException
+	{
 		String normalizedName = WhosGrindingClanPanelPlugin.normalizePlayerName(playerName);
 		GainsPeriod safePeriod = period == null ? GainsPeriod.SEVEN_DAYS : period;
 		HttpResult gainedResult = request("GET", gainedUrl(normalizedName, safePeriod));
-		if (gainedResult.responseCode != 200 || (gainedResult.responseCode == 200 && summarizeGains(gainedResult.body).startsWith("No recent gains")))
+		GrindingSummaryOutcome initial = classify(gainedResult.responseCode, gainedResult.body);
+		if (initial.status() == GrindingSummaryOutcome.Status.NO_POSITIVE_GAINS
+			|| initial.status() == GrindingSummaryOutcome.Status.NOT_TRACKED)
 		{
 			// If the player is not tracked yet, or has stale/no gains, ask WOM to create/update then retry gained.
 			HttpResult updateResult = request("POST", API_BASE_URL + PlayerTrackingLinks.urlEncode(normalizedName));
 			if (updateResult.responseCode != 200 && updateResult.responseCode != 201)
 			{
-				return "Player not on<br>WOM yet. Saved<br>official baseline<br>and will keep<br>checking trackers.";
+				return initial;
 			}
 			gainedResult = request("GET", gainedUrl(normalizedName, safePeriod));
 		}
-		if (gainedResult.responseCode != 200)
+		return classify(gainedResult.responseCode, gainedResult.body);
+	}
+
+	private static GrindingSummaryOutcome classify(int responseCode, String body)
+	{
+		if (responseCode == 404)
 		{
-			throw new IOException("Wise Old Man gained returned HTTP " + gainedResult.responseCode);
+			return new GrindingSummaryOutcome(GrindingSummaryOutcome.Status.NOT_TRACKED, "Player not on<br>WOM yet. Official<br>fallback will track<br>from this scan.");
 		}
-		return summarizeGains(gainedResult.body);
+		if (responseCode == 429)
+		{
+			return new GrindingSummaryOutcome(GrindingSummaryOutcome.Status.RATE_LIMITED, "Wise Old Man is<br>rate limited. Official<br>fallback will track<br>from this scan.");
+		}
+		if (responseCode != 200)
+		{
+			return new GrindingSummaryOutcome(GrindingSummaryOutcome.Status.HTTP_ERROR, "Wise Old Man is<br>unavailable (HTTP " + responseCode + ").");
+		}
+		try
+		{
+			String summary = summarizeGains(body);
+			GrindingSummaryOutcome.Status status = summary.startsWith("No recent gains")
+				? GrindingSummaryOutcome.Status.NO_POSITIVE_GAINS
+				: GrindingSummaryOutcome.Status.POSITIVE_GAINS;
+			return new GrindingSummaryOutcome(status, summary);
+		}
+		catch (RuntimeException ex)
+		{
+			return new GrindingSummaryOutcome(GrindingSummaryOutcome.Status.PARSE_ERROR, "Wise Old Man returned<br>data this plugin could<br>not read.");
+		}
+	}
+
+	static GrindingSummaryOutcome classifyForTest(int responseCode, String body)
+	{
+		return classify(responseCode, body);
 	}
 
 	private static String gainedUrl(String normalizedName, GainsPeriod period)

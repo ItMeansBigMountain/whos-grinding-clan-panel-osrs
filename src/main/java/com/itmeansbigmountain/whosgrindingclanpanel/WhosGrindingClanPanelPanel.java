@@ -424,7 +424,8 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 				}
 				catch (Exception ex)
 				{
-					grindingSummaryCache.put(cacheKey, dataSection("Official fallback", fallbackSourceNote(), fetchOfficialSummary(playerName)));
+					// done() runs on Swing's EDT; never perform fallback network/disk I/O here.
+					grindingSummaryCache.put(cacheKey, "Tracker lookup failed.<br>Refresh to try again.");
 				}
 				rebuild();
 			}
@@ -466,19 +467,19 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	{
 		try
 		{
-			String womResult = gainedClient.fetchGrindingSummary(playerName, config.gainsPeriod());
-			if (hasPositiveGains(womResult))
+			GrindingSummaryOutcome womResult = gainedClient.fetchOutcome(playerName, config.gainsPeriod());
+			if (womResult.hasPositiveGains())
 			{
 				// Explicit player scans also build fallback history without polling the social list.
 				captureOfficialSnapshotAsync(playerName);
-				return dataSection("Tracker API: Wise Old Man", "Gains for the selected period", womResult);
+				return dataSection("Tracker API: Wise Old Man", "Gains for the selected period", womResult.summary());
 			}
-			return dataSection("Official fallback", fallbackSourceNote(), fetchOfficialSummary(playerName));
+			return dataSection("Official fallback", fallbackSourceNote(), fetchOfficialSummary(playerName, womResult.summary()));
 		}
 		catch (Exception ex)
 		{
 			// WOM failed - fall back to official hiscores
-			return dataSection("Official fallback", fallbackSourceNote(), fetchOfficialSummary(playerName));
+			return dataSection("Official fallback", fallbackSourceNote(), fetchOfficialSummary(playerName, "Wise Old Man request failed."));
 		}
 	}
 
@@ -505,13 +506,19 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 	private String fetchOfficialSummary(String playerName)
 	{
+		return fetchOfficialSummary(playerName, null);
+	}
+
+	private String fetchOfficialSummary(String playerName, String womFailure)
+	{
 		try
 		{
 			return hiscoresClient.fetchGrindingSummary(playerName, config.gainsPeriod());
 		}
 		catch (Exception ignored)
 		{
-			return "Official hiscores unavailable.<br>No gains were changed or invented.<br>Try another scan later.";
+			String prefix = womFailure == null ? "" : womFailure + "<br>";
+			return prefix + "Official hiscores unavailable.<br>No gains were changed or invented.<br>Try another scan later.";
 		}
 	}
 

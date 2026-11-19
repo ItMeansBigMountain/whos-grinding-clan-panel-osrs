@@ -4,10 +4,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -26,7 +27,13 @@ final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 		HiscoreValues fetch(String playerName) throws IOException;
 	}
 
+	interface SnapshotReplacer
+	{
+		void replace(Path temporary, Path target) throws IOException;
+	}
+
 	private static final String HISCORES_URL = "https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=";
+	private static final DateTimeFormatter SNAPSHOT_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm 'UTC'").withZone(ZoneOffset.UTC);
 	private static final String[] SKILLS = {
 		"Overall", "Attack", "Defence", "Strength", "Hitpoints", "Ranged", "Prayer", "Magic", "Cooking", "Woodcutting",
 		"Fletching", "Fishing", "Firemaking", "Crafting", "Smithing", "Mining", "Herblore", "Agility", "Thieving", "Slayer",
@@ -49,21 +56,20 @@ final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 	private final Path snapshotDirectory;
 	private final Clock clock;
 	private final HiscoresFetcher fetcher;
+	private final SnapshotReplacer snapshotReplacer;
 
-	OfficialHiscoresGainedClient(OkHttpClient httpClient)
-	{
-		this(
-			Paths.get(System.getProperty("user.home"), ".runelite", "whos-grinding-hiscores"),
-			Clock.systemUTC(),
-			playerName -> fetchCurrentValues(httpClient, playerName)
-		);
-	}
 
 	OfficialHiscoresGainedClient(Path snapshotDirectory, Clock clock, HiscoresFetcher fetcher)
+	{
+		this(snapshotDirectory, clock, fetcher, OfficialHiscoresGainedClient::replaceAtomically);
+	}
+
+	OfficialHiscoresGainedClient(Path snapshotDirectory, Clock clock, HiscoresFetcher fetcher, SnapshotReplacer snapshotReplacer)
 	{
 		this.snapshotDirectory = snapshotDirectory;
 		this.clock = clock;
 		this.fetcher = fetcher;
+		this.snapshotReplacer = snapshotReplacer;
 	}
 
 	@Override
@@ -73,59 +79,15 @@ final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 		HiscoreValues currentValues = fetcher.fetch(normalizedName);
 		HiscoreSnapshot current = new HiscoreSnapshot(clock.instant().getEpochSecond(), currentValues);
 		Path snapshotFile = snapshotFileFor(normalizedName);
-		List<HiscoreSnapshot> snapshots = readSnapshots(snapshotFile);
-		HiscoreSnapshot baseline = baselineForPeriod(snapshots, period, clock);
-		writeSnapshots(snapshotFile, snapshots, current);
+		HiscoreSnapshot baseline = latestSnapshot(readSnapshots(snapshotFile));
+		writeSnapshot(snapshotFile, current);
 		if (baseline == null)
 		{
 			return "Fallback baseline<br>saved from official<br>OSRS hiscores.<br>Future fallback gains<br>show the difference<br>from this scan.";
 		}
-		return "Difference since<br>last plugin scan:<br>" + summarizeDelta(current.values, baseline.values);
-	}
-
-	private static HiscoreSnapshot baselineForPeriod(List<HiscoreSnapshot> snapshots, GainsPeriod period, Clock clock)
-	{
-		if (snapshots.isEmpty())
-		{
-			return null;
-		}
-		long now = clock.instant().getEpochSecond();
-		GainsPeriod safePeriod = period == null ? GainsPeriod.SEVEN_DAYS : period;
-		long targetAgeSeconds = (long) safePeriod.days() * 86400L;
-		long targetTimestamp = now - targetAgeSeconds;
-
-		// Find the snapshot closest to but not after the target period
-		HiscoreSnapshot best = null;
-		long bestDiff = Long.MAX_VALUE;
-		for (HiscoreSnapshot snapshot : snapshots)
-		{
-			if (snapshot.timestamp <= targetTimestamp)
-			{
-				long diff = targetTimestamp - snapshot.timestamp;
-				if (diff < bestDiff)
-				{
-					bestDiff = diff;
-					best = snapshot;
-				}
-			}
-		}
-		// If no snapshot at or before target, fall back to latest available
-		if (best == null)
-		{
-			best = latestSnapshot(snapshots);
-		}
-		return best;
-	}
-
-	// Package-private for testing
-	static HiscoreSnapshot testBaselineForPeriod(List<HiscoreSnapshot> snapshots, GainsPeriod period)
-	{
-		return baselineForPeriod(snapshots, period, Clock.systemUTC());
-	}
-
-	static HiscoreSnapshot testBaselineForPeriod(List<HiscoreSnapshot> snapshots, GainsPeriod period, Clock clock)
-	{
-		return baselineForPeriod(snapshots, period, clock);
+		return "Difference since<br>previous plugin scan:<br>Previous snapshot:<br>"
+			+ SNAPSHOT_TIME.format(Instant.ofEpochSecond(baseline.timestamp)) + "<br>"
+			+ summarizeDelta(current.values, baseline.values);
 	}
 
 	static String summarizeDelta(HiscoreValues current, HiscoreValues baseline)
@@ -159,7 +121,7 @@ final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 		}
 	}
 
-	private static HiscoreValues fetchCurrentValues(OkHttpClient httpClient, String playerName) throws IOException
+	static HiscoreValues fetchCurrentValues(OkHttpClient httpClient, String playerName) throws IOException
 	{
 		Request request = new Request.Builder()
 			.url(HISCORES_URL + PlayerTrackingLinks.urlEncode(playerName))
@@ -186,7 +148,33 @@ final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 		{
 			throw new IOException("Official hiscores schema incomplete: expected at least " + expectedRows + " rows, got " + rows.size());
 		}
+		int row = 0;
+		for (int i = 0; i < SKILLS.length; i++, row++)
+		{
+			validateLiveRow(rows.get(row), 2, row);
+		}
+		for (int i = 0; i < ACTIVITIES.length + BOSSES.length; i++, row++)
+		{
+			validateLiveRow(rows.get(row), 1, row);
+		}
 		return parseLiteCsv(rows);
+	}
+
+	private static void validateLiveRow(String row, int valueIndex, int rowNumber) throws IOException
+	{
+		String[] parts = row.split(",");
+		if (parts.length <= valueIndex)
+		{
+			throw new IOException("Official hiscores schema malformed at row " + rowNumber);
+		}
+		try
+		{
+			Long.parseLong(parts[valueIndex]);
+		}
+		catch (NumberFormatException ex)
+		{
+			throw new IOException("Official hiscores schema malformed at row " + rowNumber, ex);
+		}
 	}
 
 	static HiscoreValues parseLiteCsv(List<String> rows)
@@ -270,28 +258,40 @@ final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 		return snapshots.stream().max(Comparator.comparingLong(snapshot -> snapshot.timestamp)).orElse(null);
 	}
 
-	private static void writeSnapshots(Path path, List<HiscoreSnapshot> snapshots, HiscoreSnapshot current) throws IOException
+	static HiscoreSnapshot testBaselineForPeriod(List<HiscoreSnapshot> snapshots, GainsPeriod ignored)
+	{
+		return latestSnapshot(snapshots);
+	}
+
+	static HiscoreSnapshot testBaselineForPeriod(List<HiscoreSnapshot> snapshots, GainsPeriod ignored, Clock ignoredClock)
+	{
+		return latestSnapshot(snapshots);
+	}
+
+	private void writeSnapshot(Path path, HiscoreSnapshot current) throws IOException
 	{
 		Files.createDirectories(path.getParent());
-		long keepAfter = current.timestamp - 370L * 86400L;
-		List<String> lines = new ArrayList<>();
-		for (HiscoreSnapshot snapshot : snapshots)
-		{
-			if (snapshot.timestamp >= keepAfter)
-			{
-				lines.add(snapshot.serialize());
-			}
-		}
-		lines.add(current.serialize());
 		Path temporary = Files.createTempFile(path.getParent(), path.getFileName().toString(), ".tmp");
-		Files.write(temporary, lines, StandardCharsets.UTF_8);
 		try
 		{
-			Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+			Files.write(temporary, java.util.Collections.singletonList(current.serialize()), StandardCharsets.UTF_8);
+			snapshotReplacer.replace(temporary, path);
+		}
+		finally
+		{
+			Files.deleteIfExists(temporary);
+		}
+	}
+
+	private static void replaceAtomically(Path temporary, Path target) throws IOException
+	{
+		try
+		{
+			Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
 		}
 		catch (java.nio.file.AtomicMoveNotSupportedException ignored)
 		{
-			Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
+			Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
 		}
 	}
 
@@ -313,7 +313,7 @@ final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 
 		private static HiscoreValues deserialize(String value)
 		{
-			if (!value.startsWith("V2|S{"))
+			if (!value.startsWith("V2|S{") || !value.contains("}|A{") || !value.contains("}|B{") || !value.endsWith("}"))
 			{
 				// Older snapshots used outdated hiscore row offsets and can create false boss/activity deltas.
 				return null;

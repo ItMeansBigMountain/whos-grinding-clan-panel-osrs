@@ -69,7 +69,7 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 	private Instant lastAutomaticRefresh;
 
 	@Override
-	protected void startUp()
+	protected void startUp() throws Exception
 	{
 		trackingService = new SocialTrackingService();
 		trackingService.loadIgnoredMembers(config.ignoredMembers());
@@ -104,7 +104,7 @@ public class WhosGrindingClanPanelPlugin extends Plugin
 				rescanSocialSources("show offline friends changed");
 				refreshPanel();
 			}
-		}, httpClient);
+		}, httpClient, java.nio.file.Paths.get(getPluginDirectory().toString()));
 		navButton = NavigationButton.builder()
 			.tooltip(PLUGIN_NAME)
 			.icon(buildNavigationIcon())

@@ -7,8 +7,10 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
 import java.awt.Cursor;
+import java.time.Clock;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,9 +56,9 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	private SocialSourceFilter filter = SocialSourceFilter.FRIENDS_CHAT;
 	private String selectedPlayerName;
 
-	WhosGrindingClanPanelPanel(WhosGrindingClanPanelConfig config, SocialTrackerState state, PanelActions actions, OkHttpClient httpClient)
+	WhosGrindingClanPanelPanel(WhosGrindingClanPanelConfig config, SocialTrackerState state, PanelActions actions, OkHttpClient httpClient, Path pluginDirectory)
 	{
-		this(config, state, actions, new WiseOldManGainedClient(httpClient), new OfficialHiscoresGainedClient(httpClient), command -> new SwingWorker<Void, Void>()
+		this(config, state, actions, new WiseOldManGainedClient(httpClient), new OfficialHiscoresGainedClient(pluginDirectory.resolve("official-hiscores"), Clock.systemUTC(), playerName -> OfficialHiscoresGainedClient.fetchCurrentValues(httpClient, playerName)), command -> new SwingWorker<Void, Void>()
 		{
 			@Override
 			protected Void doInBackground()
@@ -358,10 +360,24 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			BorderFactory.createEmptyBorder(0, 0, 4, 3)
 		));
 		ensureGrindingSummaryLoaded(playerName);
-		JLabel title = cardLine("<span style='color:#d3972b'><b>Grinding " + escapeHtml(config.gainsPeriod().label()) + "</b></span>", 13f);
+		String summary = grindingSummaryFor(playerName);
+		String titleText;
+		if (summary.contains("Fallback baseline"))
+		{
+			titleText = "Official baseline";
+		}
+		else if (summary.contains("<b>Official fallback</b>"))
+		{
+			titleText = "Since previous scan";
+		}
+		else
+		{
+			titleText = "Grinding " + config.gainsPeriod().label();
+		}
+		JLabel title = cardLine("<span style='color:#d3972b'><b>" + titleText + "</b></span>", 13f);
 		card.add(title);
 		int cardHeight = title.getPreferredSize().height;
-		for (String line : grindingSummaryFor(playerName).split("<br>"))
+		for (String line : summary.split("<br>"))
 		{
 			JLabel row = cardLine(line, 12f);
 			card.add(row);

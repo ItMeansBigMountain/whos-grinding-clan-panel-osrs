@@ -1,6 +1,7 @@
 package com.itmeansbigmountain.whosgrindingclanpanel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -18,7 +19,7 @@ import org.junit.Test;
 public class OfficialHiscoresGainedClientTest
 {
 	@Test
-	public void firstAndSecondScansPersistSanitizedIdentityAndRenderDeltas() throws IOException
+	public void eachScanReplacesThePreviousSnapshotAndUsesOnlyTheImmediatePriorScan() throws IOException
 	{
 		Path cache = Files.createTempDirectory("hiscores-cache");
 		Instant first = Instant.parse("2026-09-01T00:00:00Z");
@@ -50,7 +51,106 @@ public class OfficialHiscoresGainedClientTest
 		assertTrue(delta.contains("Attack: <b>+250 xp</b>"));
 		assertTrue(delta.contains("LMS: <b>+9 score</b>"));
 		assertTrue(delta.contains("Zulrah: <b>+4 kc</b>"));
-		assertEquals(2, OfficialHiscoresGainedClient.testReadSnapshots(snapshot).size());
+		assertEquals(1, OfficialHiscoresGainedClient.testReadSnapshots(snapshot).size());
+
+		currentRows.set(1, "1,2,300");
+		OfficialHiscoresGainedClient thirdClient = new OfficialHiscoresGainedClient(
+			cache,
+			Clock.fixed(first.plusSeconds(120), ZoneOffset.UTC),
+			ignored -> OfficialHiscoresGainedClient.parseLiteCsv(currentRows)
+		);
+
+		String thirdDelta = thirdClient.fetchGrindingSummary("test_player!?", GainsPeriod.YEAR);
+
+		assertTrue(thirdDelta.contains("Attack: <b>+50 xp</b>"));
+		assertTrue(thirdDelta.contains("since<br>previous plugin scan"));
+		assertTrue(thirdDelta.contains("Previous snapshot:<br>2026-09-01 00:01 UTC"));
+		assertFalse(thirdDelta.contains("365"));
+		List<OfficialHiscoresGainedClient.HiscoreSnapshot> retained = OfficialHiscoresGainedClient.testReadSnapshots(snapshot);
+		assertEquals(1, retained.size());
+		assertEquals(first.plusSeconds(120).getEpochSecond(), retained.get(0).testTimestamp());
+	}
+
+	@Test
+	public void successfulScanCompactsLegacyHistoryToItsLatestValidRecord() throws IOException
+	{
+		Path cache = Files.createTempDirectory("hiscores-legacy");
+		Instant now = Instant.parse("2026-09-08T00:00:00Z");
+		OfficialHiscoresGainedClient client = new OfficialHiscoresGainedClient(
+			cache,
+			Clock.fixed(now, ZoneOffset.UTC),
+			ignored -> OfficialHiscoresGainedClient.parseLiteCsv(baselineRows())
+		);
+		Path snapshot = client.snapshotFileFor("Legacy Player");
+		Files.createDirectories(snapshot.getParent());
+		Files.write(snapshot, List.of(
+			"not-a-time,V2|S{}|A{}|B{}",
+			(now.minusSeconds(120).getEpochSecond()) + ",V2|S{Attack=1}|A{}|B{}",
+			(now.minusSeconds(60).getEpochSecond()) + ",V2|S{Attack=2}|A{}|B{}"
+		));
+
+		client.fetchGrindingSummary("legacy player", GainsPeriod.THIRTY_DAYS);
+
+		List<OfficialHiscoresGainedClient.HiscoreSnapshot> retained = OfficialHiscoresGainedClient.testReadSnapshots(snapshot);
+		assertEquals(1, retained.size());
+		assertEquals(now.getEpochSecond(), retained.get(0).testTimestamp());
+	}
+
+	@Test
+	public void failedReplacementLeavesThePriorSnapshotUntouched() throws IOException
+	{
+		Path cache = Files.createTempDirectory("hiscores-replace-failure");
+		Instant first = Instant.parse("2026-09-01T00:00:00Z");
+		OfficialHiscoresGainedClient baselineClient = new OfficialHiscoresGainedClient(
+			cache, Clock.fixed(first, ZoneOffset.UTC),
+			ignored -> OfficialHiscoresGainedClient.parseLiteCsv(baselineRows()));
+		baselineClient.fetchGrindingSummary("Safe Player", GainsPeriod.DAY);
+		Path snapshot = baselineClient.snapshotFileFor("Safe Player");
+		String before = Files.readString(snapshot);
+
+		OfficialHiscoresGainedClient failingClient = new OfficialHiscoresGainedClient(
+			cache, Clock.fixed(first.plusSeconds(60), ZoneOffset.UTC),
+			ignored -> OfficialHiscoresGainedClient.parseLiteCsv(baselineRows()),
+			(temporary, target) -> { throw new IOException("simulated replacement failure"); });
+		try
+		{
+			failingClient.fetchGrindingSummary("Safe Player", GainsPeriod.DAY);
+		}
+		catch (IOException expected)
+		{
+			assertEquals("simulated replacement failure", expected.getMessage());
+		}
+
+		assertEquals(before, Files.readString(snapshot));
+	}
+
+	@Test
+	public void malformedCurrentResponseLeavesThePriorSnapshotUntouched() throws IOException
+	{
+		Path cache = Files.createTempDirectory("hiscores-malformed-current");
+		Instant first = Instant.parse("2026-09-01T00:00:00Z");
+		OfficialHiscoresGainedClient baselineClient = new OfficialHiscoresGainedClient(
+			cache, Clock.fixed(first, ZoneOffset.UTC),
+			ignored -> OfficialHiscoresGainedClient.parseLiteCsvChecked(baselineRows()));
+		baselineClient.fetchGrindingSummary("Safe Player", GainsPeriod.DAY);
+		Path snapshot = baselineClient.snapshotFileFor("Safe Player");
+		String before = Files.readString(snapshot);
+		List<String> malformedRows = new ArrayList<>(baselineRows());
+		malformedRows.set(1, "not,a,number");
+		OfficialHiscoresGainedClient malformedClient = new OfficialHiscoresGainedClient(
+			cache, Clock.fixed(first.plusSeconds(60), ZoneOffset.UTC),
+			ignored -> OfficialHiscoresGainedClient.parseLiteCsvChecked(malformedRows));
+
+		try
+		{
+			malformedClient.fetchGrindingSummary("Safe Player", GainsPeriod.DAY);
+		}
+		catch (IOException expected)
+		{
+			assertTrue(expected.getMessage().contains("malformed"));
+		}
+
+		assertEquals(before, Files.readString(snapshot));
 	}
 
 	@Test
@@ -69,7 +169,7 @@ public class OfficialHiscoresGainedClientTest
 			Clock.fixed(now, ZoneOffset.UTC)
 		);
 
-		assertEquals(now.minusSeconds(8 * 86400L).getEpochSecond(), selected.testTimestamp());
+		assertEquals(now.minusSeconds(6 * 86400L).getEpochSecond(), selected.testTimestamp());
 	}
 
 	@Test

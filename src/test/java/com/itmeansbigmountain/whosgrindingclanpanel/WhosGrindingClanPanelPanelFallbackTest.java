@@ -52,10 +52,13 @@ public class WhosGrindingClanPanelPanelFallbackTest
 			(player, period) -> "No recent gains<br>found.",
 			(player, period) -> scan.getAndIncrement() == 0
 				? "Fallback baseline<br>saved from official<br>OSRS hiscores."
-				: "<b>Skills</b>:<br>▴ Attack: <b>+250 xp</b><br><b>Bosses</b>:<br>⚔ Zulrah: <b>+4 kc</b><br><b>Activities</b>:<br>★ LMS: <b>+9 score</b>"
+				: "Difference since<br>previous plugin scan:<br>Previous snapshot:<br>2026-09-01 00:01 UTC<br><b>Skills</b>:<br>▴ Attack: <b>+250 xp</b><br><b>Bosses</b>:<br>⚔ Zulrah: <b>+4 kc</b><br><b>Activities</b>:<br>★ LMS: <b>+9 score</b>"
 		);
 
 		String first = panel.testFetchConfiguredSummary("Test Player");
+		showSummary(panel, "Test Player", first);
+		assertTrue(visibleText(panel).contains("Official baseline"));
+		assertFalse(visibleText(panel).contains("Since previous scan"));
 		String second = panel.testFetchConfiguredSummary("Test Player");
 
 		assertTrue(first.contains("Fallback baseline"));
@@ -69,6 +72,9 @@ public class WhosGrindingClanPanelPanelFallbackTest
 		assertTrue(visibleText.contains("+250 xp"));
 		assertTrue(visibleText.contains("+4 kc"));
 		assertTrue(visibleText.contains("+9 score"));
+		assertTrue(visibleText.contains("Since previous scan"));
+		assertTrue(visibleText.contains("2026-09-01 00:01 UTC"));
+		assertFalse(visibleText.contains("Grinding Day"));
 		Path render = Path.of("build", "reports", "official-hiscores-delta-panel.png");
 		Files.createDirectories(render.getParent());
 		renderPanel(panel, render);

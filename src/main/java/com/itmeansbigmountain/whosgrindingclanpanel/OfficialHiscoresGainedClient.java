@@ -83,7 +83,7 @@ final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 		writeSnapshot(snapshotFile, current);
 		if (baseline == null)
 		{
-			return "Fallback baseline<br>saved from official<br>OSRS hiscores.<br>Future fallback gains<br>show the difference<br>from this scan.";
+			return "Scan saved.<br>Scan again later<br>to see new gains.";
 		}
 		return "Difference since<br>previous plugin scan:<br>Previous snapshot:<br>"
 			+ SNAPSHOT_TIME.format(Instant.ofEpochSecond(baseline.timestamp)) + "<br>"
@@ -98,7 +98,7 @@ final class OfficialHiscoresGainedClient implements GrindingSummaryClient
 		addSection(sections, "Activities", gainedLines(current.activities, baseline.activities, "Score", "score", "★"));
 		if (sections.isEmpty())
 		{
-			return "No official<br>hiscores difference<br>found since the<br>last plugin scan.<br>Scan again after<br>new hiscores changes.";
+			return "No new gains<br>since the last scan.<br>Scan again after<br>XP, KC, or score changes.";
 		}
 		return String.join("<br>", sections);
 	}

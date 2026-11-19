@@ -32,7 +32,8 @@ public class OfficialHiscoresGainedClientTest
 
 		String baselineMessage = firstClient.fetchGrindingSummary("  Test Player!?  ", GainsPeriod.DAY);
 
-		assertTrue(baselineMessage.contains("baseline"));
+		assertTrue(baselineMessage.contains("Scan saved"));
+		assertFalse(baselineMessage.toLowerCase().contains("official"));
 		Path snapshot = firstClient.snapshotFileFor("Test Player!?");
 		assertEquals(cache.resolve("test_player__.csv"), snapshot);
 		assertTrue(Files.isRegularFile(snapshot));
@@ -321,7 +322,7 @@ public class OfficialHiscoresGainedClientTest
 	}
 
 	@Test
-	public void firstScanReturnsBaselineSavedMessage() throws IOException
+	public void noDeltaMessageFocusesOnTheNextUsefulAction() throws IOException
 	{
 		// This test verifies the message format for first scan
 		// We can't easily test the full fetchGrindingSummary without network,
@@ -331,8 +332,10 @@ public class OfficialHiscoresGainedClientTest
 			new OfficialHiscoresGainedClient.HiscoreValues(),
 			new OfficialHiscoresGainedClient.HiscoreValues()
 		);
-		assertTrue(summary.contains("No official"));
-		assertTrue(summary.contains("hiscores difference"));
+		assertTrue(summary.contains("No new gains"));
+		assertTrue(summary.contains("Scan again"));
+		assertFalse(summary.toLowerCase().contains("official"));
+		assertFalse(summary.toLowerCase().contains("hiscores"));
 	}
 
 	private static List<String> baselineRows()

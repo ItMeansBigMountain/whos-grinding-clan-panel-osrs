@@ -131,7 +131,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		List<TrackedMember> visibleMembers = state.filteredMembers(filter);
 		if (visibleMembers.isEmpty())
 		{
-			content.add(statusLabel("No tracked members for " + filter.label() + ". Press ↻ after logging in."));
+			content.add(statusHtmlLabel("No tracked members<br>for " + escapeHtml(filter.label()) + ".<br>Press ↻ after logging in."));
 		}
 		else
 		{
@@ -188,7 +188,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		String expanded = loggedIn && isSelected(playerName) ? "▾ " : "▸ ";
 		JLabel label = new JLabel("<html><body style='width:" + (MEMBER_TEXT_WIDTH - 30) + "px'>"
 			+ "<b>" + expanded + "You: " + escapeHtml(playerName) + "</b>"
-			+ (loggedIn ? " <span style='color:#b8b8b8'>what others see</span>" : "") + "</body></html>");
+			+ "</body></html>");
 		label.setFont(label.getFont().deriveFont(11f));
 		label.setForeground(Color.WHITE);
 		label.setToolTipText(loggedIn ? "Click to expand/collapse your grinding details" : "Log in to show your character");
@@ -314,6 +314,14 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		return label;
 	}
 
+	private JLabel statusHtmlLabel(String html)
+	{
+		JLabel label = new JLabel("<html><body style='width:" + PANEL_TEXT_WIDTH + "px'>" + html + "</body></html>");
+		label.setForeground(new Color(211, 151, 43));
+		label.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+		return label;
+	}
+
 	private JPanel memberRow(TrackedMember member)
 	{
 		JPanel row = new JPanel(new BorderLayout(0, 0));
@@ -362,11 +370,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		ensureGrindingSummaryLoaded(playerName);
 		String summary = grindingSummaryFor(playerName);
 		String titleText;
-		if (summary.contains("Fallback baseline"))
-		{
-			titleText = "Official baseline";
-		}
-		else if (summary.contains("<b>Official fallback</b>"))
+		if (summary.contains("Difference since"))
 		{
 			titleText = "Since previous scan";
 		}
@@ -415,14 +419,14 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 		String cacheKey = grindingCacheKey(playerName);
 		if (!config.enableWiseOldManLookups() && config.gainDataSource() == GainDataSource.TRACKER_APIS)
 		{
-			grindingSummaryCache.put(cacheKey, "WOM lookups<br>are disabled<br>in config.");
+			grindingSummaryCache.put(cacheKey, "Player gains are disabled.<br>Enable lookups in settings.");
 			return;
 		}
 		if (grindingSummaryCache.containsKey(cacheKey))
 		{
 			return;
 		}
-		grindingSummaryCache.put(cacheKey, "Loading " + config.gainDataSource().toString() + "<br>for " + config.gainsPeriod().label() + "...");
+		grindingSummaryCache.put(cacheKey, "Loading gains<br>for " + config.gainsPeriod().label() + "...");
 		new SwingWorker<String, Void>()
 		{
 			@Override
@@ -452,7 +456,7 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	{
 		if (config.gainDataSource() == GainDataSource.OFFICIAL_HISCORES)
 		{
-			return dataSection("Official fallback", fallbackSourceNote(), fetchOfficialSummary(playerName));
+			return fetchOfficialSummary(playerName);
 		}
 		return fetchWomSummary(playerName);
 	}
@@ -460,23 +464,6 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 	String testFetchConfiguredSummary(String playerName)
 	{
 		return fetchConfiguredSummary(playerName);
-	}
-
-	private String fallbackSourceNote()
-	{
-		return "Saved official snapshot";
-	}
-
-	private String separator()
-	{
-		return "<br><span style='color:#5f5f5f'>────────────────────</span><br>";
-	}
-
-	private String dataSection(String title, String source, String summary)
-	{
-		return "<b>" + escapeHtml(title) + "</b>:<br>"
-			+ "<span style='color:#b8b8b8'>" + escapeHtml(source) + "</span><br>"
-			+ summary;
 	}
 
 	private String fetchWomSummary(String playerName)
@@ -488,22 +475,15 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 			{
 				// Explicit player scans also build fallback history without polling the social list.
 				captureOfficialSnapshotAsync(playerName);
-				return dataSection("Tracker API: Wise Old Man", "Gains for the selected period", womResult.summary());
+				return womResult.summary();
 			}
-			return dataSection("Official fallback", fallbackSourceNote(), fetchOfficialSummary(playerName, womResult.summary()));
+			return fetchOfficialSummary(playerName);
 		}
 		catch (Exception ex)
 		{
 			// WOM failed - fall back to official hiscores
-			return dataSection("Official fallback", fallbackSourceNote(), fetchOfficialSummary(playerName, "Wise Old Man request failed."));
+			return fetchOfficialSummary(playerName);
 		}
-	}
-
-	private static boolean hasPositiveGains(String summary)
-	{
-		return summary != null
-			&& !summary.startsWith("No recent gains")
-			&& !summary.startsWith("Player not on");
 	}
 
 	private void captureOfficialSnapshotAsync(String playerName)
@@ -522,25 +502,19 @@ class WhosGrindingClanPanelPanel extends PluginPanel
 
 	private String fetchOfficialSummary(String playerName)
 	{
-		return fetchOfficialSummary(playerName, null);
-	}
-
-	private String fetchOfficialSummary(String playerName, String womFailure)
-	{
 		try
 		{
 			return hiscoresClient.fetchGrindingSummary(playerName, config.gainsPeriod());
 		}
 		catch (Exception ignored)
 		{
-			String prefix = womFailure == null ? "" : womFailure + "<br>";
-			return prefix + "Official hiscores unavailable.<br>No gains were changed or invented.<br>Try another scan later.";
+			return "Gains unavailable.<br>Refresh to try again.";
 		}
 	}
 
 	private String grindingSummaryFor(String playerName)
 	{
-		return grindingSummaryCache.getOrDefault(grindingCacheKey(playerName), "Loading " + config.gainDataSource().toString() + "<br>for " + config.gainsPeriod().label() + "...");
+		return grindingSummaryCache.getOrDefault(grindingCacheKey(playerName), "Loading gains<br>for " + config.gainsPeriod().label() + "...");
 	}
 
 	private String grindingCacheKey(String playerName)

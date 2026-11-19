@@ -32,15 +32,14 @@ public class WhosGrindingClanPanelPanelFallbackTest
 			(player, period) -> "<b>Skills</b>:<br>▴ Attack: <b>+100 xp</b>",
 			(player, period) -> {
 				officialCalls.incrementAndGet();
-				return "Fallback baseline saved";
+				return "Scan saved";
 			}
 		);
 
 		String result = panel.testFetchConfiguredSummary("Oyama");
 
-		assertTrue(result.contains("Tracker API: Wise Old Man"));
 		assertTrue(result.contains("+100 xp"));
-		assertFalse(result.contains("Fallback: Official"));
+		assertNoSourceExplanation(result);
 		assertEquals(1, officialCalls.get());
 	}
 
@@ -51,19 +50,18 @@ public class WhosGrindingClanPanelPanelFallbackTest
 		WhosGrindingClanPanelPanel panel = panel(
 			(player, period) -> "No recent gains<br>found.",
 			(player, period) -> scan.getAndIncrement() == 0
-				? "Fallback baseline<br>saved from official<br>OSRS hiscores."
+				? "Scan saved.<br>Scan again later<br>to see new gains."
 				: "Difference since<br>previous plugin scan:<br>Previous snapshot:<br>2026-09-01 00:01 UTC<br><b>Skills</b>:<br>▴ Attack: <b>+250 xp</b><br><b>Bosses</b>:<br>⚔ Zulrah: <b>+4 kc</b><br><b>Activities</b>:<br>★ LMS: <b>+9 score</b>"
 		);
 
 		String first = panel.testFetchConfiguredSummary("Test Player");
 		showSummary(panel, "Test Player", first);
-		assertTrue(visibleText(panel).contains("Official baseline"));
+		assertTrue(visibleText(panel).contains("Grinding Day"));
 		assertFalse(visibleText(panel).contains("Since previous scan"));
 		String second = panel.testFetchConfiguredSummary("Test Player");
 
-		assertTrue(first.contains("Fallback baseline"));
-		assertTrue(first.contains("Official fallback"));
-		assertFalse(first.contains("Tracker API: Wise Old Man"));
+		assertTrue(first.contains("Scan saved"));
+		assertNoSourceExplanation(first);
 		assertTrue(second.contains("+250 xp"));
 		assertTrue(second.contains("+4 kc"));
 		assertTrue(second.contains("+9 score"));
@@ -74,7 +72,7 @@ public class WhosGrindingClanPanelPanelFallbackTest
 		assertTrue(visibleText.contains("+9 score"));
 		assertTrue(visibleText.contains("Since previous scan"));
 		assertTrue(visibleText.contains("2026-09-01 00:01 UTC"));
-		assertFalse(visibleText.contains("Grinding Day"));
+		assertNoSourceExplanation(visibleText);
 		Path render = Path.of("build", "reports", "official-hiscores-delta-panel.png");
 		Files.createDirectories(render.getParent());
 		renderPanel(panel, render);
@@ -91,8 +89,36 @@ public class WhosGrindingClanPanelPanelFallbackTest
 
 		String result = panel.testFetchConfiguredSummary("Test Player");
 
-		assertTrue(result.contains("Official hiscores unavailable"));
+		assertTrue(result.contains("Gains unavailable"));
+		assertTrue(result.contains("Refresh to try again"));
+		assertNoSourceExplanation(result);
 		assertFalse(result.contains("+"));
+	}
+
+	@Test
+	public void narrowPanelAvoidsCrowdedHelperAndWrapsEmptyState()
+	{
+		WhosGrindingClanPanelPanel panel = panel(
+			(player, period) -> "No recent gains<br>found.",
+			(player, period) -> "Scan saved."
+		);
+
+		String text = visibleText(panel);
+
+		assertFalse(text.contains("what others see"));
+		assertTrue(text.contains("No tracked members<br>for Friends Chat.<br>Press ↻ after logging in."));
+	}
+
+	private static void assertNoSourceExplanation(String text)
+	{
+		String lower = text.toLowerCase();
+		assertFalse(lower.contains("wom"));
+		assertFalse(lower.contains("wise old man"));
+		assertFalse(lower.contains("official fallback"));
+		assertFalse(lower.contains("official hiscores"));
+		assertFalse(lower.contains("official baseline"));
+		assertFalse(lower.contains("tracker api"));
+		assertFalse(lower.contains("saved official snapshot"));
 	}
 
 	private static WhosGrindingClanPanelPanel panel(GrindingSummaryClient wom, GrindingSummaryClient official)
